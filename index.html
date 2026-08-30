@@ -156,6 +156,30 @@
   @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
   .thinking{color:var(--ink-soft);font-weight:700;font-size:.95rem;padding:4px 2px}
 
+  /* ---------- KI-Status & Quiz ---------- */
+  .modepill{
+    font-family:"Nunito",sans-serif;font-weight:800;font-size:.75rem;
+    background:#E3E9F2;color:var(--ink-soft);border-radius:12px;padding:3px 10px;white-space:nowrap;
+  }
+  .modepill.on{background:#DDF3E7;color:var(--leaf-deep)}
+  .qdisplay{font-size:76px;line-height:1.15;margin:14px 0;min-height:90px;display:grid;place-items:center}
+  .qdisplay .qword{font-family:"Baloo 2",sans-serif;font-size:2rem;font-weight:800}
+  .qdisplay .qplay{
+    border:0;border-radius:50%;width:96px;height:96px;font-size:2.6rem;cursor:pointer;
+    background:var(--sun);border-bottom:6px solid var(--sun-deep);
+  }
+  .qdisplay .qplay:active{transform:translateY(3px)}
+  .qopts{display:flex;flex-direction:column;gap:10px}
+  .qopt{
+    border:0;border-radius:18px;border-bottom:4px solid var(--sky-line);
+    background:var(--paper);padding:14px;font-family:"Baloo 2",sans-serif;
+    font-size:1.2rem;font-weight:800;color:var(--ink);cursor:pointer;
+  }
+  .qopt:active{transform:translateY(2px)}
+  .qopt.correct{background:var(--leaf);border-bottom-color:var(--leaf-deep);color:#fff}
+  .qopt.wrong{background:#F6DEE7;border-bottom-color:var(--berry);animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
+
   /* ---------- stickers ---------- */
   .stickergrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px;margin-top:16px}
   .sticker{
@@ -216,9 +240,11 @@
       <h1 id="home-greet">Hello!</h1>
       <div class="hello">Ich bin Fred aus England. Lass uns Englisch lernen!</div>
       <div class="hello" id="home-stats" style="margin-top:4px"></div>
+      <div style="color:var(--ink-soft);font-size:.8rem;font-weight:700;margin-top:8px" id="home-version"></div>
     </div>
     <div class="menu">
       <button class="btn sun" data-go="topics-learn"><span class="big">📚</span> Wörter lernen</button>
+      <button class="btn green" data-go="topics-quiz"><span class="big">🎯</span> Quiz spielen</button>
       <button class="btn primary" data-go="topics-chat"><span class="big">💬</span> Mit Fred reden</button>
       <button class="btn" data-go="album"><span class="big">⭐</span> Meine Sticker <span id="sticker-count" style="margin-left:auto;color:var(--fox-deep)"></span></button>
     </div>
@@ -278,6 +304,7 @@
         <button class="iconbtn" id="chat-back" aria-label="Zurück">←</button>
         <div class="fred-face mini">🦊</div>
         <span class="title">Fred</span>
+        <span class="modepill" id="modepill"></span>
         <span class="spacer"></span>
         <button class="btn small sun" id="chat-done">Fertig ✔</button>
       </div>
@@ -310,6 +337,22 @@
     </div>
   </section>
 
+  <!-- ============ QUIZ ============ -->
+  <section class="screen" id="scr-quiz">
+    <div class="topbar">
+      <button class="iconbtn" data-go="topics-quiz" aria-label="Zurück">←</button>
+      <span class="title" id="quiz-title">Quiz</span>
+      <span class="spacer"></span>
+      <span class="modepill on" id="quiz-score">⭐ 0</span>
+    </div>
+    <div class="dots" id="quiz-dots"></div>
+    <div class="wordcard">
+      <div style="font-weight:800;color:var(--ink-soft)" id="q-prompt"></div>
+      <div class="qdisplay" id="q-display"></div>
+      <div class="qopts" id="q-opts"></div>
+    </div>
+  </section>
+
   <!-- ============ ALBUM ============ -->
   <section class="screen" id="scr-album">
     <div class="topbar">
@@ -335,11 +378,37 @@
     <div class="panel">
       <label for="set-key">Anthropic API-Schlüssel (für den echten KI-Fred)</label>
       <input id="set-key" type="password" placeholder="sk-ant-…">
+      <div class="btnrow">
+        <button class="btn small sun" id="btn-keytest">🔌 Schlüssel testen</button>
+      </div>
+      <div class="note" id="keytest-result">
+        Status: <b id="keystatus">–</b>
+      </div>
       <div class="note">
         Ohne Schlüssel läuft Fred im <b>Übungsmodus</b> mit vorbereiteten Gesprächen.
         Einen Schlüssel bekommt ihr auf <b>console.anthropic.com</b> (Guthaben aufladen,
         z.&nbsp;B. 5&nbsp;$ – mehr kann nie abgebucht werden). Der Schlüssel wird nur auf
-        diesem Gerät gespeichert.
+        diesem Gerät gespeichert. Ob die KI läuft, zeigt auch das Schildchen oben im
+        Chat: <b>🤖 Echte KI</b> oder <b>📖 Übungsmodus</b>.
+      </div>
+    </div>
+
+    <div class="panel">
+      <label for="set-voice">Freds Stimme</label>
+      <select id="set-voice"></select>
+      <label for="set-pitch" style="margin-top:12px">Stimmlage</label>
+      <select id="set-pitch">
+        <option value="0.8">Tiefer (männlicher)</option>
+        <option value="1.0">Normal</option>
+        <option value="1.2">Höher</option>
+      </select>
+      <div class="btnrow">
+        <button class="btn small sun" id="btn-voicetest">🔊 Probehören</button>
+      </div>
+      <div class="note">
+        Welche Stimmen es gibt, bestimmt das Gerät. Die App wählt automatisch eine
+        männliche englische Stimme, wenn eine da ist. Gibt es nur eine Stimme
+        (häufig auf Android-Tablets), hilft die Stimmlage „Tiefer".
       </div>
     </div>
 
@@ -363,6 +432,20 @@
     </div>
 
     <div class="panel">
+      <label>Fortschritt sichern &amp; laden</label>
+      <div class="btnrow">
+        <button class="btn small sun" id="btn-backup">💾 Sicherung herunterladen</button>
+        <button class="btn small" id="btn-restore">📂 Sicherung laden</button>
+      </div>
+      <input type="file" id="restore-file" accept=".json,application/json" hidden>
+      <div class="note">
+        Sticker, gelernte Wörter und Einstellungen als Datei (ohne API-Schlüssel).
+        Beim ersten Start einer neuen App-Version wird automatisch eine Sicherung
+        heruntergeladen. App-Version: <b id="ver-label"></b>
+      </div>
+    </div>
+
+    <div class="panel">
       <button class="btn small" id="btn-reset" style="background:#F6DEE7;border-bottom-color:var(--berry)">Alle Daten zurücksetzen</button>
       <div class="note">Löscht Sticker, Lernfortschritt und Einstellungen auf diesem Gerät.</div>
     </div>
@@ -375,9 +458,10 @@
 <script>
 "use strict";
 /* =====================================================================
-   Fred der Englisch-Fuchs – Prototyp
+   Fred der Englisch-Fuchs
    Ein Lern-Kumpel für Kinder in der 3. Klasse (erste englische Wörter).
    ===================================================================== */
+const APP_VERSION = "1.4";
 
 /* ---------------- Daten: Themen & Wortschatz-Kisten ---------------- */
 const TOPICS = [
@@ -434,29 +518,133 @@ const TOPICS = [
     ]
   },
   {
-    id: "minecraft", emoji: "⛏️", title: "Minecraft",
+    id: "minecraft", emoji: "⛏️", title: "JonahCraft",
     words: [
-      { en: "I play Minecraft.",      de: "Ich spiele Minecraft.",       pic: "🎮" },
+      { en: "I play JonahCraft.",     de: "Ich spiele JonahCraft.",      pic: "🎮" },
       { en: "Let's build a house!",   de: "Lass uns ein Haus bauen!",    pic: "🏠" },
-      { en: "diamond",                de: "Diamant",                     pic: "💎" },
-      { en: "sword",                  de: "Schwert",                     pic: "⚔️" },
-      { en: "Watch out, a creeper!",  de: "Pass auf, ein Creeper!",      pic: "🟢" },
-      { en: "What do you build?",     de: "Was baust du?",               pic: "🧱" },
-      { en: "That's cool!",           de: "Das ist cool!",               pic: "😎" }
+      { en: "My dog follows me.",     de: "Mein Hund folgt mir.",        pic: "🐶" },
+      { en: "I ride a horse.",        de: "Ich reite ein Pferd.",        pic: "🐴" },
+      { en: "treasure",               de: "der Schatz",                  pic: "💎" },
+      { en: "Watch out, TNT!",        de: "Pass auf, TNT!",              pic: "💥" },
+      { en: "Let's drive a car!",     de: "Lass uns Auto fahren!",       pic: "🚗" }
     ],
     chat: [
-      { fred: "Hi! Guess what - I play Minecraft! Do you play Minecraft?", de: "Hi! Rate mal - ich spiele Minecraft! Spielst du Minecraft?",
-        sugg: [ { en: "Yes, I play Minecraft!", de: "Ja, ich spiele Minecraft!" }, { en: "I love Minecraft!", de: "Ich liebe Minecraft!" }, { en: "Yes!", de: "Ja!" } ] },
-      { fred: "Awesome! What do you build?", de: "Super! Was baust du?",
-        sugg: [ { en: "I build a house.", de: "Ich baue ein Haus." }, { en: "I build a castle.", de: "Ich baue eine Burg." }, { en: "Many things!", de: "Viele Sachen!" } ] },
-      { fred: "That's cool! I dig for diamonds. Do you like diamonds?", de: "Das ist cool! Ich grabe nach Diamanten. Magst du Diamanten?",
-        sugg: [ { en: "Yes, I like diamonds!", de: "Ja, ich mag Diamanten!" }, { en: "Diamonds are cool!", de: "Diamanten sind cool!" }, { en: "I have a diamond sword!", de: "Ich habe ein Diamantschwert!" } ] },
-      { fred: "Wow! Watch out - a creeper! Run!", de: "Wow! Pass auf - ein Creeper! Lauf!",
-        sugg: [ { en: "Oh no!", de: "Oh nein!" }, { en: "Run, Fred, run!", de: "Lauf, Fred, lauf!" }, { en: "I have a sword!", de: "Ich habe ein Schwert!" } ] },
-      { fred: "Phew, that was close! You are a Minecraft hero!", de: "Puh, das war knapp! Du bist ein Minecraft-Held!",
-        sugg: [ { en: "Thank you!", de: "Danke!" }, { en: "We are heroes!", de: "Wir sind Helden!" }, { en: "That was cool!", de: "Das war cool!" } ] },
-      { fred: "Let's build a house next time! Bye!", de: "Nächstes Mal bauen wir ein Haus! Tschüss!", end: true,
+      { fred: "Hi! I play JonahCraft - your game! Do you play too?", de: "Hi! Ich spiele JonahCraft - dein Spiel! Spielst du auch?",
+        sugg: [ { en: "Yes, I play JonahCraft!", de: "Ja, ich spiele JonahCraft!" }, { en: "It's my game!", de: "Es ist mein Spiel!" }, { en: "I love it!", de: "Ich liebe es!" } ] },
+      { fred: "I tamed a dog! It has a red collar. Do you have a pet in the game?", de: "Ich habe einen Hund gezähmt! Er hat ein rotes Halsband. Hast du ein Haustier im Spiel?",
+        sugg: [ { en: "Yes, I have a dog!", de: "Ja, ich habe einen Hund!" }, { en: "I have a cat.", de: "Ich habe eine Katze." }, { en: "My dog follows me!", de: "Mein Hund folgt mir!" } ] },
+      { fred: "Cool! Let's drive a car to the village! Beep beep!", de: "Cool! Lass uns mit dem Auto ins Dorf fahren! Tut tuut!",
+        sugg: [ { en: "Beep beep!", de: "Tut tuut!" }, { en: "Let's drive!", de: "Lass uns fahren!" }, { en: "I love the cars!", de: "Ich liebe die Autos!" } ] },
+      { fred: "I know a secret fortress with treasure! Do you want to find it?", de: "Ich kenne eine geheime Festung mit einem Schatz! Willst du sie finden?",
+        sugg: [ { en: "Yes! Let's go!", de: "Ja! Los geht's!" }, { en: "I know the fortress!", de: "Ich kenne die Festung!" }, { en: "Treasure!", de: "Schatz!" } ] },
+      { fred: "Follow the compass! Look - treasure chests with diamonds!", de: "Folg dem Kompass! Schau - Schatztruhen mit Diamanten!",
+        sugg: [ { en: "Wow, diamonds!", de: "Wow, Diamanten!" }, { en: "We are rich!", de: "Wir sind reich!" }, { en: "That's cool!", de: "Das ist cool!" } ] },
+      { fred: "Watch out, TNT! Three, two, one... BOOM! Haha! Bye, my friend!", de: "Pass auf, TNT! Drei, zwei, eins... BUMM! Haha! Tschüss, mein Freund!", end: true,
+        sugg: [ { en: "Haha! BOOM! Bye!", de: "Haha! BUMM! Tschüss!" }, { en: "Bye, Fred!", de: "Tschüss, Fred!" }, { en: "See you!", de: "Bis bald!" } ] }
+    ]
+  },
+  {
+    id: "karate", emoji: "🥋", title: "Karate & Sport",
+    words: [
+      { en: "I do karate.",          de: "Ich mache Karate.",           pic: "🥋" },
+      { en: "kick",                  de: "der Tritt",                   pic: "🦵" },
+      { en: "punch",                 de: "der Schlag (mit der Faust)",  pic: "👊" },
+      { en: "strong",                de: "stark",                       pic: "💪" },
+      { en: "fast",                  de: "schnell",                     pic: "⚡" },
+      { en: "Let's train!",          de: "Lass uns trainieren!",        pic: "🏋️" },
+      { en: "I have a yellow belt.", de: "Ich habe einen gelben Gürtel.", pic: "🟡" }
+    ],
+    chat: [
+      { fred: "Hi! Guess what - I do karate! Do you do karate too?", de: "Hi! Rate mal - ich mache Karate! Machst du auch Karate?",
+        sugg: [ { en: "Yes, I do karate!", de: "Ja, ich mache Karate!" }, { en: "Me too!", de: "Ich auch!" }, { en: "Cool!", de: "Cool!" } ] },
+      { fred: "Awesome! Karate makes you strong and fast!", de: "Super! Karate macht dich stark und schnell!",
+        sugg: [ { en: "I am strong!", de: "Ich bin stark!" }, { en: "I am fast!", de: "Ich bin schnell!" }, { en: "Yes!", de: "Ja!" } ] },
+      { fred: "Show me your best kick! Hi-yah!", de: "Zeig mir deinen besten Tritt! Hi-jaaa!",
+        sugg: [ { en: "Hi-yah! Kick!", de: "Hi-jaaa! Tritt!" }, { en: "Look at my kick!", de: "Schau dir meinen Tritt an!" }, { en: "Wow!", de: "Wow!" } ] },
+      { fred: "Wow, super kick! What belt do you have?", de: "Wow, super Tritt! Welchen Gürtel hast du?",
+        sugg: [ { en: "I have a yellow belt.", de: "Ich habe einen gelben Gürtel." }, { en: "I have a white belt.", de: "Ich habe einen weißen Gürtel." }, { en: "An orange belt!", de: "Einen orangen Gürtel!" } ] },
+      { fred: "Great! Let's train together! One, two, three - punch!", de: "Klasse! Lass uns zusammen trainieren! Eins, zwei, drei - Schlag!",
+        sugg: [ { en: "Punch!", de: "Schlag!" }, { en: "Let's train!", de: "Lass uns trainieren!" }, { en: "One, two, three!", de: "Eins, zwei, drei!" } ] },
+      { fred: "You are a karate star! High five! Bye!", de: "Du bist ein Karate-Star! High five! Tschüss!", end: true,
+        sugg: [ { en: "High five! Bye!", de: "High five! Tschüss!" }, { en: "Bye, Fred!", de: "Tschüss, Fred!" }, { en: "See you!", de: "Bis bald!" } ] }
+    ]
+  },
+  {
+    id: "workshop", emoji: "🔨", title: "Werkstatt",
+    words: [
+      { en: "hammer",                  de: "der Hammer",                 pic: "🔨" },
+      { en: "saw",                     de: "die Säge",                   pic: "🪚" },
+      { en: "wood",                    de: "das Holz",                   pic: "🪵" },
+      { en: "screw",                   de: "die Schraube",               pic: "🔩" },
+      { en: "tools",                   de: "das Werkzeug",               pic: "🧰" },
+      { en: "I build a bird house.",   de: "Ich baue ein Vogelhaus.",    pic: "🐦" },
+      { en: "Let's build something!",  de: "Lass uns etwas bauen!",      pic: "🛠️" }
+    ],
+    chat: [
+      { fred: "Hello! I'm in my workshop! Do you like building things?", de: "Hallo! Ich bin in meiner Werkstatt! Baust du gerne Sachen?",
+        sugg: [ { en: "Yes, I love building!", de: "Ja, ich baue total gern!" }, { en: "I have a workshop too!", de: "Ich habe auch eine Werkstatt!" }, { en: "Cool!", de: "Cool!" } ] },
+      { fred: "Great! I build a bird house today. What do you build?", de: "Super! Ich baue heute ein Vogelhaus. Was baust du?",
+        sugg: [ { en: "I build a bird house too!", de: "Ich baue auch ein Vogelhaus!" }, { en: "I build a boat.", de: "Ich baue ein Boot." }, { en: "Many things!", de: "Viele Sachen!" } ] },
+      { fred: "Nice! I need my hammer. Bang, bang, bang!", de: "Schön! Ich brauche meinen Hammer. Bumm, bumm, bumm!",
+        sugg: [ { en: "I have a hammer!", de: "Ich habe einen Hammer!" }, { en: "Bang, bang!", de: "Bumm, bumm!" }, { en: "Be careful!", de: "Sei vorsichtig!" } ] },
+      { fred: "Now the saw for the wood. What tools do you have?", de: "Jetzt die Säge für das Holz. Welches Werkzeug hast du?",
+        sugg: [ { en: "I have a saw.", de: "Ich habe eine Säge." }, { en: "I have many tools!", de: "Ich habe viel Werkzeug!" }, { en: "A hammer and a saw.", de: "Einen Hammer und eine Säge." } ] },
+      { fred: "Wow, you are a real builder! The bird house is ready!", de: "Wow, du bist ein echter Handwerker! Das Vogelhaus ist fertig!",
+        sugg: [ { en: "It looks great!", de: "Es sieht toll aus!" }, { en: "The birds are happy!", de: "Die Vögel freuen sich!" }, { en: "We are good builders!", de: "Wir sind gute Handwerker!" } ] },
+      { fred: "Let's build something together next time! Bye!", de: "Nächstes Mal bauen wir zusammen etwas! Tschüss!", end: true,
         sugg: [ { en: "Yes! Bye, Fred!", de: "Ja! Tschüss, Fred!" }, { en: "See you!", de: "Bis bald!" }, { en: "Bye bye!", de: "Tschü-hüss!" } ] }
+    ]
+  },
+  {
+    id: "food", emoji: "🍕", title: "Essen",
+    words: [
+      { en: "pizza",                          de: "die Pizza",                  pic: "🍕" },
+      { en: "apple",                          de: "der Apfel",                  pic: "🍎" },
+      { en: "ice cream",                      de: "das Eis",                    pic: "🍦" },
+      { en: "chocolate",                      de: "die Schokolade",             pic: "🍫" },
+      { en: "I'm hungry!",                    de: "Ich habe Hunger!",           pic: "😋" },
+      { en: "Yummy!",                         de: "Lecker!",                    pic: "🤤" },
+      { en: "My favourite food is pizza.",    de: "Mein Lieblingsessen ist Pizza.", pic: "🥇" }
+    ],
+    chat: [
+      { fred: "Hi! I'm so hungry! Are you hungry too?", de: "Hi! Ich habe sooo einen Hunger! Hast du auch Hunger?",
+        sugg: [ { en: "Yes, I'm hungry!", de: "Ja, ich habe Hunger!" }, { en: "A little bit.", de: "Ein bisschen." }, { en: "No, I'm not.", de: "Nein, habe ich nicht." } ] },
+      { fred: "Let's eat! My favourite food is pizza. And yours?", de: "Lass uns essen! Mein Lieblingsessen ist Pizza. Und deins?",
+        sugg: [ { en: "My favourite food is pizza too!", de: "Mein Lieblingsessen ist auch Pizza!" }, { en: "I like ice cream!", de: "Ich mag Eis!" }, { en: "Chocolate!", de: "Schokolade!" } ] },
+      { fred: "Yummy! Do you want pizza with cheese?", de: "Lecker! Willst du Pizza mit Käse?",
+        sugg: [ { en: "Yes, please!", de: "Ja, bitte!" }, { en: "With lots of cheese!", de: "Mit ganz viel Käse!" }, { en: "Yummy!", de: "Lecker!" } ] },
+      { fred: "Here you go! And after that - ice cream!", de: "Bitteschön! Und danach - Eis!",
+        sugg: [ { en: "Thank you!", de: "Danke!" }, { en: "I love ice cream!", de: "Ich liebe Eis!" }, { en: "Chocolate ice cream, please!", de: "Schoko-Eis, bitte!" } ] },
+      { fred: "Mmmh, yummy! Now my tummy is happy!", de: "Mmmh, lecker! Jetzt ist mein Bauch glücklich!",
+        sugg: [ { en: "My tummy is happy too!", de: "Mein Bauch ist auch glücklich!" }, { en: "That was yummy!", de: "Das war lecker!" }, { en: "Thank you, Fred!", de: "Danke, Fred!" } ] },
+      { fred: "Next time we eat apples - very healthy! Bye!", de: "Nächstes Mal essen wir Äpfel - sehr gesund! Tschüss!", end: true,
+        sugg: [ { en: "Haha, okay! Bye!", de: "Haha, okay! Tschüss!" }, { en: "Bye, Fred!", de: "Tschüss, Fred!" }, { en: "See you!", de: "Bis bald!" } ] }
+    ]
+  },
+  {
+    id: "colors", emoji: "🌈", title: "Farben & Zahlen",
+    words: [
+      { en: "red",                             de: "rot",                        pic: "🔴" },
+      { en: "blue",                            de: "blau",                       pic: "🔵" },
+      { en: "green",                           de: "grün",                       pic: "🟢" },
+      { en: "yellow",                          de: "gelb",                       pic: "🟨" },
+      { en: "one, two, three",                 de: "eins, zwei, drei",           pic: "🔢" },
+      { en: "ten",                             de: "zehn",                       pic: "🔟" },
+      { en: "My favourite colour is green.",   de: "Meine Lieblingsfarbe ist Grün.", pic: "🎨" }
+    ],
+    chat: [
+      { fred: "Hi! Look, a rainbow! Do you see the colours?", de: "Hi! Schau, ein Regenbogen! Siehst du die Farben?",
+        sugg: [ { en: "Yes! Red and blue!", de: "Ja! Rot und blau!" }, { en: "Wow, beautiful!", de: "Wow, wunderschön!" }, { en: "I see green!", de: "Ich sehe grün!" } ] },
+      { fred: "My favourite colour is orange - like me! And yours?", de: "Meine Lieblingsfarbe ist Orange - wie ich! Und deine?",
+        sugg: [ { en: "My favourite colour is green.", de: "Meine Lieblingsfarbe ist Grün." }, { en: "I like blue!", de: "Ich mag Blau!" }, { en: "Red!", de: "Rot!" } ] },
+      { fred: "Nice! Let's count my stickers: one, two, three...", de: "Schön! Lass uns meine Sticker zählen: eins, zwei, drei...",
+        sugg: [ { en: "Four, five, six!", de: "Vier, fünf, sechs!" }, { en: "One, two, three!", de: "Eins, zwei, drei!" }, { en: "So many!", de: "So viele!" } ] },
+      { fred: "...seven, eight, nine, TEN! I have ten stickers!", de: "...sieben, acht, neun, ZEHN! Ich habe zehn Sticker!",
+        sugg: [ { en: "Wow, ten stickers!", de: "Wow, zehn Sticker!" }, { en: "I have stickers too!", de: "Ich habe auch Sticker!" }, { en: "Can we trade?", de: "Können wir tauschen?" } ] },
+      { fred: "You count really well! Numbers are fun!", de: "Du zählst richtig gut! Zahlen machen Spaß!",
+        sugg: [ { en: "Thank you!", de: "Danke!" }, { en: "Counting is fun!", de: "Zählen macht Spaß!" }, { en: "Yes!", de: "Ja!" } ] },
+      { fred: "Bye bye! See you, my colourful friend!", de: "Tschüss! Bis bald, mein bunter Freund!", end: true,
+        sugg: [ { en: "Bye, Fred!", de: "Tschüss, Fred!" }, { en: "See you!", de: "Bis bald!" }, { en: "Bye bye!", de: "Tschü-hüss!" } ] }
     ]
   }
 ];
@@ -475,7 +663,12 @@ const STICKERS = [
   { id:"shadow",  pic:"🐺", nm:"Shadow",       de:"der Nachtwolf",     r:"rare" },
   { id:"blaze",   pic:"🐉", nm:"Blaze",        de:"der Feuerdrache",   r:"rare" },
   { id:"chompy",  pic:"🦈", nm:"Chompy",       de:"der Schnapphai",    r:"rare" },
+  { id:"koala",   pic:"🐨", nm:"Cuddle Koala", de:"der Kuschel-Koala", r:"common" },
+  { id:"pizzy",   pic:"🍕", nm:"Pizzy",        de:"die Power-Pizza",   r:"common" },
+  { id:"eagle",   pic:"🦅", nm:"Sky Eagle",    de:"der Himmels-Adler", r:"rare" },
+  { id:"ninja",   pic:"🥷", nm:"Ninja Max",    de:"der Blitz-Ninja",   r:"rare" },
   { id:"diamond", pic:"💎", nm:"Mega Diamond", de:"der Mega-Diamant",  r:"epic" },
+  { id:"champ",   pic:"🏆", nm:"Super Champion", de:"der Super-Champion", r:"epic" },
   { id:"creeper", pic:"🧨", nm:"Boom Creeper", de:"der Boom-Creeper",  r:"epic" },
   { id:"goldfred",pic:"🌟", nm:"Golden Fred",  de:"der goldene Fred",  r:"epic" }
 ];
@@ -483,6 +676,7 @@ const RARITY_DE = { common:"Normal", rare:"Selten ✨", epic:"SUPER-SELTEN 💥"
 
 /* ---------------- Speicher ---------------- */
 const DEFAULTS = { name:"Jonah", apiKey:"", model:"claude-opus-5",
+                   voiceName:"", pitch:1.0, lastVersion:"",
                    learned:[], stickers:[], done:{}, transcript:[] };
 let state = load();
 function load(){
@@ -515,8 +709,10 @@ function route(){
   let token = (location.hash || "#home").replace(/^#/, "") || "home";
   if (token === "topics-learn"){ mode = "learn"; token = "topics"; }
   else if (token === "topics-chat"){ mode = "chat"; token = "topics"; }
+  else if (token === "topics-quiz"){ mode = "quiz"; token = "topics"; }
   /* Bildschirme, deren Sitzung vorbei ist, führen zurück nach Hause */
   if (token === "lesson" && (!lesson || li >= lesson.words.length)) return location.replace("#home");
+  if (token === "quiz" && (!quiz || quiz.qi >= quiz.qs.length)) return location.replace("#home");
   if (token === "chat" && !chatTopic) return location.replace("#home");
   if (token === "reward" && !rewardReady) return location.replace("#home");
   if (token === "parents" && !parentsUnlocked) return location.replace("#home");
@@ -533,6 +729,7 @@ function prepareScreen(id){
   else if (id === "topics") buildTopics();
   else if (id === "parents") renderParents();
   else if (id === "lesson") renderWord();
+  else if (id === "quiz") renderQuiz();
   else if (id === "reward"){
     rewardReady = false;               /* nur einmal feiern */
     sfx("win");
@@ -557,10 +754,28 @@ function esc(s){
 }
 
 /* ---------------- Sprachausgabe (Fred spricht) ---------------- */
+/* Fred soll eine Jungen-Stimme haben: bevorzugt Stimmen mit männlichen
+   Namen; im Elternbereich kann man aus allen englischen Stimmen wählen. */
+const MALE_HINT = /\bmale\b|man\b|daniel|george|arthur|james|oliver|ryan|guy|brian|aaron|thomas|jack|fred|alex\b/i;
+const FEMALE_HINT = /female|woman|zira|susan|hazel|samantha|karen|moira|tessa|serena|victoria|kate|allison|ava|emma|amy|joanna|salli|kimberly|ivy|libby|sonia|catherine/i;
 let voice = null;
-function pickVoice(){
+function englishVoices(){
   const vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
-  voice = vs.find(v => v.lang === "en-GB") || vs.find(v => v.lang && v.lang.startsWith("en")) || null;
+  return vs.filter(v => v.lang && v.lang.toLowerCase().startsWith("en"));
+}
+function pickVoice(){
+  const vs = englishVoices();
+  if (!vs.length){ voice = null; return; }
+  if (state.voiceName){
+    const m = vs.find(v => v.name === state.voiceName);
+    if (m){ voice = m; return; }
+  }
+  const score = v =>
+    (MALE_HINT.test(v.name) ? 4 : 0) +
+    (FEMALE_HINT.test(v.name) ? -4 : 0) +
+    (v.lang === "en-GB" ? 2 : 0) +
+    (/google/i.test(v.name) ? 1 : 0);
+  voice = vs.slice().sort((a,b) => score(b) - score(a))[0];
 }
 if (window.speechSynthesis){
   pickVoice();
@@ -576,7 +791,7 @@ function speak(text){
     speechSynthesis.cancel();
     if (!voice) pickVoice();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = "en-GB"; u.rate = 0.85; u.pitch = 1.15;
+    u.lang = "en-GB"; u.rate = 0.85; u.pitch = state.pitch || 1.0;
     if (voice) u.voice = voice;
     u.onstart = () => { ttsWarned = true; };  /* Ton kam an - nie mehr warnen */
     u.onerror = () => {
@@ -668,6 +883,7 @@ $("#btn-parents").addEventListener("click", () => {
 /* ---------------- Home ---------------- */
 function renderHome(){
   $("#home-greet").textContent = "Hello, " + state.name + "!";
+  $("#home-version").textContent = "Version " + APP_VERSION;
   $("#sticker-count").textContent = state.stickers.length ? state.stickers.length + " ⭐" : "";
   const st = $("#home-stats");
   st.textContent = state.learned.length
@@ -679,7 +895,9 @@ $("#fred-hero").addEventListener("click", () => speak("Hello " + state.name + "!
 
 /* ---------------- Themen-Auswahl ---------------- */
 function buildTopics(){
-  $("#topics-title").textContent = mode === "learn" ? "Was willst du lernen?" : "Worüber reden wir?";
+  $("#topics-title").textContent =
+    mode === "learn" ? "Was willst du lernen?" :
+    mode === "quiz"  ? "Welches Quiz spielst du?" : "Worüber reden wir?";
   const list = $("#topiclist");
   list.innerHTML = "";
   TOPICS.forEach(t => {
@@ -688,7 +906,8 @@ function buildTopics(){
     const doneKey = mode + ":" + t.id;
     b.innerHTML = '<span class="big">' + t.emoji + '</span> ' + esc(t.title) +
                   (state.done[doneKey] ? '<span class="topic-done">✅</span>' : "");
-    b.addEventListener("click", () => mode === "learn" ? startLesson(t) : startChat(t));
+    b.addEventListener("click", () =>
+      mode === "learn" ? startLesson(t) : mode === "quiz" ? startQuiz(t) : startChat(t));
     list.appendChild(b);
   });
 }
@@ -736,6 +955,102 @@ $("#wc-next").addEventListener("click", () => {
     giveSticker("Wortschatz-Kiste geschafft! 🎉");
   }
 });
+
+/* =====================================================================
+   QUIZ  - drei Fragetypen, automatisch aus den Themen-Wörtern gebaut:
+   Bild -> Englisch, Deutsch -> Englisch, Hören -> Bedeutung
+   ===================================================================== */
+let quiz = null;
+function shuffle(a){ return a.slice().sort(() => Math.random() - .5); }
+
+function startQuiz(t){
+  const words = t.words;
+  const picCounts = {};
+  words.forEach(w => { picCounts[w.pic] = (picCounts[w.pic] || 0) + 1; });
+  const qs = shuffle(words).map(w => {
+    const others = shuffle(words.filter(x => x.en !== w.en)).slice(0, 2);
+    let types = ["de2en", "audio2de"];
+    if (picCounts[w.pic] === 1) types.push("pic2en");   /* Bild muss eindeutig sein */
+    const type = types[Math.floor(Math.random() * types.length)];
+    const options = shuffle([w, ...others]);
+    return { type, w, options };
+  });
+  quiz = { topic: t, qs, qi: 0, score: 0, locked: false };
+  $("#quiz-title").textContent = t.emoji + " " + t.title;
+  nav("quiz");
+}
+
+function renderQuiz(){
+  const q = quiz.qs[quiz.qi];
+  const dots = $("#quiz-dots");
+  dots.innerHTML = "";
+  quiz.qs.forEach((_, i) => {
+    const d = document.createElement("i");
+    if (i < quiz.qi) d.classList.add("hit");
+    dots.appendChild(d);
+  });
+  $("#quiz-score").textContent = "⭐ " + quiz.score;
+  const disp = $("#q-display");
+  const name = s => s.replace("Jonah", state.name);
+  if (q.type === "pic2en"){
+    $("#q-prompt").textContent = "Was ist das auf Englisch?";
+    disp.textContent = q.w.pic;
+  } else if (q.type === "de2en"){
+    $("#q-prompt").textContent = "Wie sagt man das auf Englisch?";
+    disp.innerHTML = '<span class="qword">' + esc(name(q.w.de)) + "</span>";
+  } else {
+    $("#q-prompt").textContent = "Hör zu - was bedeutet das?";
+    disp.innerHTML = '<button class="qplay" id="qplay" aria-label="Anhören">🔊</button>';
+    $("#qplay").addEventListener("click", () => speak(name(q.w.en)));
+    speak(name(q.w.en));
+  }
+  const box = $("#q-opts");
+  box.innerHTML = "";
+  q.options.forEach(opt => {
+    const b = document.createElement("button");
+    b.className = "qopt";
+    b.textContent = q.type === "audio2de" ? name(opt.de) : name(opt.en);
+    b.addEventListener("click", () => answerQuiz(b, opt === q.w));
+    box.appendChild(b);
+  });
+  quiz.locked = false;
+}
+
+function answerQuiz(btn, correct){
+  if (quiz.locked) return;
+  quiz.locked = true;
+  const q = quiz.qs[quiz.qi];
+  const name = s => s.replace("Jonah", state.name);
+  if (correct){
+    btn.classList.add("correct");
+    quiz.score++;
+    sfx("pop");
+    if (q.type !== "audio2de") speak(name(q.w.en));
+  } else {
+    btn.classList.add("wrong");
+    /* Die richtige Antwort grün zeigen, damit er sie lernt */
+    const right = q.type === "audio2de" ? name(q.w.de) : name(q.w.en);
+    [...document.querySelectorAll(".qopt")].find(b => b.textContent === right)
+      ?.classList.add("correct");
+    speak(name(q.w.en));
+  }
+  const w = q.w;
+  if (correct && !state.learned.includes(w.en)){ state.learned.push(w.en); save(); }
+  setTimeout(() => {
+    quiz.qi++;
+    if (quiz.qi < quiz.qs.length){ renderQuiz(); }
+    else {
+      const total = quiz.qs.length, score = quiz.score;
+      if (score >= total - 2){
+        state.done["quiz:" + quiz.topic.id] = true; save();
+        giveSticker("Quiz geschafft! " + score + " von " + total + " richtig! 🎉");
+      } else {
+        toast("Du hattest " + score + " von " + total + ". Übe die Wörter und probier's nochmal - dann gibt's den Sticker! 💪", 4500);
+        nav("topics-quiz");
+      }
+    }
+  }, correct ? 950 : 1800);
+}
 
 /* ---------------- Sticker vergeben ---------------- */
 function randomSticker(){
@@ -787,11 +1102,17 @@ let chatTopic = null, step = 0, kidTurns = 0, history = [], aiMode = false, busy
 function startChat(t){
   chatTopic = t; step = 0; kidTurns = 0; history = [];
   aiMode = !!state.apiKey;
+  setModePill();
   state.transcript = [];
   $("#msgs").innerHTML = "";
   $("#transbox").hidden = true; $("#tin").value = ""; $("#tout").hidden = true;
   chatPending = true;
   nav("chat");
+}
+function setModePill(){
+  const p = $("#modepill");
+  if (aiMode){ p.textContent = "🤖 Echte KI"; p.className = "modepill on"; }
+  else { p.textContent = "📖 Übungsmodus"; p.className = "modepill"; }
 }
 function scriptLine(stepObj){
   return {
@@ -891,6 +1212,21 @@ $("#chat-done").addEventListener("click", () => {
 /* ---------------- KI-Fred (Claude-API) ---------------- */
 function systemPrompt(){
   const vocab = chatTopic.words.map(w => w.en).join(", ");
+  /* Spielwissen über Jonahs eigenes Minecraft ("JonahCraft"), damit Fred
+     über die Dinge redet, die es im Spiel wirklich gibt. */
+  const jonahcraft = chatTopic.id === "minecraft" ? [
+    "",
+    "ABOUT JONAHCRAFT (the game you two talk about - it is " + state.name + "'s OWN Minecraft-style game that he built with his dad):",
+    "- You can tame pets: dogs, cats, pigs, cows and birds. They get a red collar and follow you. Horses can be ridden.",
+    "- There are honking cars to drive, boats to sail, sheep to shear for wool.",
+    "- You build houses with real doors, glass windows, garage doors, fences, signs with your own text, and paintings you can paint yourself.",
+    "- You plant carrots, tomatoes and wheat, bake bread, pick apples - food gives super powers (fast running, high jumping).",
+    "- Villages have friendly villagers (Hans, Emma, Otto) and kids (Max, Mia, Leo). You can become friends - a heart appears!",
+    "- At the market you buy cake, balloons and fireworks with euros.",
+    "- Every world has ONE secret underground fortress with a throne and treasure chests - the compass shows the way.",
+    "- TNT makes big BOOMs. It sometimes snows and you can build snowmen. There are NO zombies and NO creepers in this game.",
+    "Talk about THESE things when chatting about the game - it makes " + state.name + " feel you really know his game."
+  ] : [];
   return [
     "You are Fred, a friendly, funny 9-year-old fox from England.",
     "You are chatting with " + state.name + ", a 9-year-old German child in 3rd grade who is JUST starting to learn English.",
@@ -904,11 +1240,12 @@ function systemPrompt(){
     "- If " + state.name + " writes German or seems stuck: help with the English word plus a tiny German hint in brackets.",
     "- Never criticize mistakes. Instead, repeat the sentence correctly inside your friendly reply.",
     "- Stay strictly kid-safe: no scary, violent or adult topics. Never ask for personal information (address, school, phone). Never suggest meeting in real life. If something inappropriate comes up, cheerfully change the topic.",
-    "- After about 8 exchanges, start saying a warm goodbye.",
+    "- After about 8 exchanges, start saying a warm goodbye."
+  ].concat(jonahcraft).concat([
     "",
     'OUTPUT: Respond ONLY with minified JSON, no markdown, exactly this shape:',
     '{"reply":"Fred\'s English reply","de":"German translation of the reply","suggestions":[{"en":"simple answer the child could give","de":"German meaning"},{"en":"...","de":"..."},{"en":"...","de":"..."}]}'
-  ].join("\n");
+  ]).join("\n");
 }
 
 async function askFredAI(childText){
@@ -973,6 +1310,7 @@ async function askFredAI(childText){
     }
     /* Sanfter Rückfall in den Übungsmodus, damit das Gespräch weitergeht */
     aiMode = false; step = 0;
+    setModePill();
     fredSays(scriptLine(chatTopic.chat[0]));
   } finally {
     busy = false;
@@ -1110,6 +1448,25 @@ function renderParents(){
   $("#set-name").value = state.name;
   $("#set-key").value = state.apiKey;
   $("#set-model").value = state.model;
+  $("#keystatus").textContent = state.apiKey ? "Schlüssel gespeichert (noch nicht getestet)" : "kein Schlüssel - Übungsmodus";
+  const vs = englishVoices();
+  const sel = $("#set-voice");
+  sel.innerHTML = "";
+  if (!vs.length){
+    sel.innerHTML = '<option value="">Automatisch</option>';
+  } else {
+    const auto = document.createElement("option");
+    auto.value = ""; auto.textContent = "Automatisch (männliche bevorzugt)";
+    sel.appendChild(auto);
+    vs.forEach(v => {
+      const o = document.createElement("option");
+      o.value = v.name; o.textContent = v.name + " (" + v.lang + ")";
+      sel.appendChild(o);
+    });
+  }
+  sel.value = state.voiceName || "";
+  $("#set-pitch").value = String(state.pitch || 1.0);
+  $("#ver-label").textContent = APP_VERSION;
   $("#learned-count").textContent = state.learned.length;
   const lp = $("#learned-list");
   lp.innerHTML = state.learned.length ? "" : '<span style="background:none;color:var(--ink-soft)">Noch keine.</span>';
@@ -1128,6 +1485,86 @@ $("#set-key").addEventListener("change", ev => {
   toast(state.apiKey ? "KI-Modus aktiviert! 🎉" : "Übungsmodus aktiv (kein Schlüssel).");
 });
 $("#set-model").addEventListener("change", ev => { state.model = ev.target.value; save(); });
+$("#set-voice").addEventListener("change", ev => {
+  state.voiceName = ev.target.value; save();
+  voice = null; pickVoice();
+  speak("Hello! I am Fred!");
+});
+$("#set-pitch").addEventListener("change", ev => {
+  state.pitch = parseFloat(ev.target.value) || 1.0; save();
+  speak("Hello! I am Fred!");
+});
+$("#btn-voicetest").addEventListener("click", () => speak("Hello " + state.name + "! I am Fred the fox!"));
+$("#btn-keytest").addEventListener("click", async () => {
+  state.apiKey = $("#set-key").value.trim(); save();
+  const st = $("#keystatus");
+  if (!state.apiKey){ st.textContent = "kein Schlüssel - Übungsmodus"; return; }
+  st.textContent = "teste …";
+  const body = { model: state.model, max_tokens: 20,
+                 messages: [{ role:"user", content:"Reply with exactly: OK" }] };
+  if (state.model.indexOf("claude-opus-5") === 0) body.output_config = { effort:"low" };
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": state.apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify(body)
+    });
+    if (res.status === 401){ st.textContent = "❌ Schlüssel ungültig (401) - bitte neu kopieren"; return; }
+    if (!res.ok){
+      const err = await res.json().catch(() => ({}));
+      st.textContent = "❌ Fehler " + res.status + ": " + ((err.error && err.error.message) || "unbekannt");
+      return;
+    }
+    const data = await res.json();
+    st.textContent = "✅ Schlüssel funktioniert - Claude (" + (data.model || state.model) + ") hat geantwortet!";
+  } catch(e){
+    st.textContent = "❌ Keine Verbindung zur API (Internet? Vorschau-Umgebung blockiert die KI)";
+  }
+});
+/* ---- Fortschritt sichern / laden ---- */
+function backupDownload(auto){
+  try {
+    const copy = Object.assign({}, state);
+    delete copy.apiKey;   /* der Schlüssel gehört nicht in eine teilbare Datei */
+    const blob = new Blob([JSON.stringify(copy, null, 2)], { type:"application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "fred-sicherung-v" + APP_VERSION + "-" + new Date().toISOString().slice(0,10) + ".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    if (!auto) toast("Sicherung heruntergeladen! 💾");
+  } catch(e){
+    if (!auto) toast("Sichern hat leider nicht geklappt. 🙈");
+  }
+}
+$("#btn-backup").addEventListener("click", () => backupDownload(false));
+$("#btn-restore").addEventListener("click", () => $("#restore-file").click());
+$("#restore-file").addEventListener("change", ev => {
+  const f = ev.target.files && ev.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const data = JSON.parse(r.result);
+      if (!data || !Array.isArray(data.stickers) || !Array.isArray(data.learned)){
+        toast("Das ist keine Fred-Sicherungsdatei. 🙈"); return;
+      }
+      delete data.apiKey;               /* aktuellen Schlüssel behalten */
+      state = Object.assign({}, DEFAULTS, state, data, { apiKey: state.apiKey });
+      save();
+      renderParents(); renderHome();
+      toast("Sicherung geladen - " + state.stickers.length + " Sticker sind zurück! 🎉");
+    } catch(e){ toast("Die Datei konnte nicht gelesen werden. 🙈"); }
+  };
+  r.readAsText(f);
+  ev.target.value = "";
+});
+
 $("#btn-reset").addEventListener("click", () => {
   if (confirm("Wirklich ALLE Daten (Sticker, Fortschritt, Einstellungen) löschen?")){
     state = Object.assign({}, DEFAULTS); save(); renderHome(); toast("Alles zurückgesetzt.");
@@ -1191,6 +1628,16 @@ window.addEventListener("storage", ev => {
     if ($("#scr-home").classList.contains("on")) renderHome();
   }
 });
+/* Neue App-Version? Zwischenstand automatisch als Datei sichern. */
+if (state.lastVersion !== APP_VERSION){
+  const hasProgress = state.stickers.length || state.learned.length;
+  if (state.lastVersion && hasProgress){
+    backupDownload(true);
+    setTimeout(() => toast("Neue Version " + APP_VERSION + "! Dein Fortschritt wurde als Datei gesichert. 💾", 4500), 600);
+  }
+  state.lastVersion = APP_VERSION;
+  save();
+}
 route();
 </script>
 </body>

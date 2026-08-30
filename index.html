@@ -180,6 +180,34 @@
   .qopt.wrong{background:#F6DEE7;border-bottom-color:var(--berry);animation:shake .4s}
   @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
 
+  /* ---------- Sticker-Heft (Buch mit Seiten) ---------- */
+  .book{perspective:1400px;touch-action:pan-y;user-select:none;-webkit-user-select:none;margin-top:6px}
+  .bookpage{
+    background:linear-gradient(105deg,#FFFDF4 60%,#FFF6E0);
+    border:2px solid #EADFC4;border-radius:20px;
+    box-shadow:0 10px 24px rgba(34,69,107,.14), inset -16px 0 26px -20px rgba(120,90,20,.35);
+    min-height:440px;padding:16px 16px 16px 30px;position:relative;
+  }
+  .bookpage::before{
+    content:"";position:absolute;left:12px;top:14px;bottom:14px;
+    border-left:3px dashed #E4D5AE;   /* Heft-Rand wie im Schulheft */
+  }
+  .flip-in-right{transform-origin:right center;animation:flipR .35s ease}
+  .flip-in-left{transform-origin:left center;animation:flipL .35s ease}
+  @keyframes flipR{from{transform:rotateY(55deg);opacity:.15}to{transform:none;opacity:1}}
+  @keyframes flipL{from{transform:rotateY(-55deg);opacity:.15}to{transform:none;opacity:1}}
+  .pagehead{
+    font-family:"Baloo 2",sans-serif;font-weight:800;color:var(--ink-soft);
+    text-align:center;font-size:.95rem;
+  }
+  .pagegrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px}
+  .pagegrid .sticker .pic{font-size:3rem}
+  .cover{text-align:center;padding-top:40px}
+  .cover .big{font-size:90px;line-height:1}
+  .cover h2{margin-top:10px}
+  .cover .sub{color:var(--ink-soft);font-weight:800}
+  .bookbar{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:12px}
+
   /* ---------- stickers ---------- */
   .stickergrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px;margin-top:16px}
   .sticker{
@@ -353,14 +381,25 @@
     </div>
   </section>
 
-  <!-- ============ ALBUM ============ -->
+  <!-- ============ STICKER-HEFT ============ -->
   <section class="screen" id="scr-album">
     <div class="topbar">
       <button class="iconbtn" data-go="home" aria-label="Zurück">←</button>
-      <span class="title">Mein Sticker-Album</span>
+      <span class="title">Mein Sticker-Heft</span>
+      <span class="spacer"></span>
+      <span class="modepill on" id="album-count">⭐ 0</span>
     </div>
-    <p style="color:var(--ink-soft);font-weight:700">Lerne Wörter und rede mit Fred, um alle Sticker zu sammeln!</p>
-    <div class="stickergrid" id="stickergrid"></div>
+    <div class="book" id="book">
+      <div class="bookpage" id="bookpage"></div>
+    </div>
+    <div class="bookbar">
+      <button class="iconbtn" id="pg-prev" aria-label="Vorherige Seite">‹</button>
+      <div class="dots" id="book-dots" style="margin:0"></div>
+      <button class="iconbtn" id="pg-next" aria-label="Nächste Seite">›</button>
+    </div>
+    <p style="text-align:center;color:var(--ink-soft);font-weight:700;font-size:.95rem">
+      👈 Wischen zum Umblättern! 👉
+    </p>
   </section>
 
   <!-- ============ PARENTS ============ -->
@@ -461,7 +500,7 @@
    Fred der Englisch-Fuchs
    Ein Lern-Kumpel für Kinder in der 3. Klasse (erste englische Wörter).
    ===================================================================== */
-const APP_VERSION = "1.4";
+const APP_VERSION = "1.5";
 
 /* ---------------- Daten: Themen & Wortschatz-Kisten ---------------- */
 const TOPICS = [
@@ -1076,22 +1115,81 @@ function giveSticker(headline){
   nav("reward");   /* Fanfare, Stimme und Konfetti startet der Screen-Wechsel */
 }
 
-/* ---------------- Album ---------------- */
-function renderAlbum(){
-  const g = $("#stickergrid");
-  g.innerHTML = "";
-  STICKERS.forEach(s => {
-    const n = state.stickers.filter(id => id === s.id).length;
-    const d = document.createElement("div");
-    d.className = "sticker " + s.r + (n ? "" : " locked");
-    d.innerHTML = '<div class="pic">' + (n ? s.pic : "❔") + '</div>' +
-                  '<div class="nm">' + (n ? esc(s.nm) : "???") + '</div>' +
-                  '<div class="de">' + (n ? esc(s.de) : RARITY_DE[s.r]) + '</div>' +
-                  (n > 1 ? '<div class="cnt">×' + n + '</div>' : "");
-    if (n) d.addEventListener("click", () => speak(s.nm));
-    g.appendChild(d);
-  });
+/* ---------------- Sticker-Heft (Buch zum Umblättern) ---------------- */
+const STICKERS_PER_PAGE = 6;
+let albumPage = 0;
+function albumPageChunks(){
+  const pages = [];
+  for (let i = 0; i < STICKERS.length; i += STICKERS_PER_PAGE)
+    pages.push(STICKERS.slice(i, i + STICKERS_PER_PAGE));
+  return pages;
 }
+function stickerCell(s){
+  const n = state.stickers.filter(id => id === s.id).length;
+  return '<div class="sticker ' + s.r + (n ? '" data-say="' + esc(s.nm) + '"' : ' locked"') + '>' +
+         '<div class="pic">' + (n ? s.pic : "❔") + '</div>' +
+         '<div class="nm">' + (n ? esc(s.nm) : "???") + '</div>' +
+         '<div class="de">' + (n ? esc(s.de) : RARITY_DE[s.r]) + '</div>' +
+         (n > 1 ? '<div class="cnt">×' + n + '</div>' : "") + '</div>';
+}
+function renderAlbum(){
+  /* Mit Stickern direkt auf Seite 1 aufschlagen, sonst aufs Deckblatt */
+  albumPage = state.stickers.length ? 1 : 0;
+  drawBookPage(0);
+}
+function drawBookPage(dir){
+  const pages = albumPageChunks();
+  const total = pages.length + 1;                 /* +1 fürs Deckblatt */
+  albumPage = Math.max(0, Math.min(albumPage, total - 1));
+  $("#album-count").textContent = "⭐ " + state.stickers.length;
+  const el = $("#bookpage");
+  el.classList.remove("flip-in-left", "flip-in-right");
+  void el.offsetWidth;                            /* Animation neu starten */
+  if (albumPage === 0){
+    el.innerHTML =
+      '<div class="cover"><div class="big">🦊</div>' +
+      '<h2>' + esc(state.name) + 's Sticker-Heft</h2>' +
+      '<div class="sub">' + state.stickers.length + ' von ' + STICKERS.length + ' Stickern gesammelt</div>' +
+      '<div class="sub" style="margin-top:26px">Wisch nach links zum Aufschlagen! 👉</div></div>';
+  } else {
+    el.innerHTML =
+      '<div class="pagehead">Seite ' + albumPage + ' von ' + pages.length + '</div>' +
+      '<div class="pagegrid">' + pages[albumPage - 1].map(stickerCell).join("") + '</div>';
+  }
+  el.querySelectorAll("[data-say]").forEach(d =>
+    d.addEventListener("click", () => speak(d.dataset.say)));
+  if (dir) el.classList.add(dir > 0 ? "flip-in-right" : "flip-in-left");
+  const dots = $("#book-dots");
+  dots.innerHTML = "";
+  for (let i = 0; i < total; i++){
+    const d = document.createElement("i");
+    if (i === albumPage) d.classList.add("hit");
+    dots.appendChild(d);
+  }
+}
+function flipPage(dir){
+  const total = albumPageChunks().length + 1;
+  const nxt = albumPage + dir;
+  if (nxt < 0 || nxt >= total) return;
+  albumPage = nxt;
+  sfx("pop");
+  drawBookPage(dir);
+}
+$("#pg-prev").addEventListener("click", () => flipPage(-1));
+$("#pg-next").addEventListener("click", () => flipPage(1));
+(function(){
+  const book = $("#book");
+  let startX = null;
+  book.addEventListener("pointerdown", e => { startX = e.clientX; });
+  book.addEventListener("pointerup", e => {
+    if (startX === null) return;
+    const dx = e.clientX - startX;
+    startX = null;
+    if (dx < -40) flipPage(1);       /* nach links wischen = weiterblättern */
+    else if (dx > 40) flipPage(-1);
+  });
+  book.addEventListener("pointercancel", () => { startX = null; });
+})();
 
 /* =====================================================================
    CHAT MIT FRED

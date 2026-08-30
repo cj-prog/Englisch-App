@@ -141,6 +141,18 @@
     background:var(--berry);color:#fff;border-bottom:4px solid #B84368;display:grid;place-items:center;
   }
   .micbtn.listening{animation:pulse 1s infinite;background:var(--leaf);border-bottom-color:var(--leaf-deep)}
+  .micbtn.mini{width:46px;height:46px;font-size:1.15rem}
+  .helper-row{padding:2px 0 6px}
+  .transbox{
+    background:var(--card);border-radius:20px;padding:14px;margin:6px 0;
+    border:3px solid var(--sun);border-bottom-width:5px;
+  }
+  .transbox .tb-head{font-family:"Baloo 2",sans-serif;font-weight:800;margin-bottom:8px}
+  .tb-en{
+    font-family:"Baloo 2",sans-serif;font-weight:800;font-size:1.5rem;
+    margin:10px 2px 6px;color:var(--fox-deep);
+  }
+  .tb-en.miss{font-family:"Nunito",sans-serif;font-size:1rem;color:var(--ink-soft)}
   @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
   .thinking{color:var(--ink-soft);font-weight:700;font-size:.95rem;padding:4px 2px}
 
@@ -272,6 +284,24 @@
       <div class="msgs" id="msgs"></div>
       <div class="thinking" id="thinking" hidden>Fred denkt nach…</div>
       <div class="chips" id="chips"></div>
+      <div class="helper-row">
+        <button class="chip" id="transtoggle">🇩🇪→🇬🇧 Wie sagt man …?<small>Übersetzungs-Hilfe</small></button>
+      </div>
+      <div class="transbox" id="transbox" hidden>
+        <div class="tb-head">Sag oder tipp es auf Deutsch – ich verrate dir das Englische!</div>
+        <div class="inputrow">
+          <button class="micbtn mini" id="tmic" aria-label="Auf Deutsch sprechen">🎤</button>
+          <input id="tin" type="text" autocomplete="off" placeholder="Deutsches Wort oder Satz…">
+          <button class="iconbtn" id="tgo" aria-label="Übersetzen" style="background:var(--sun);border-bottom-color:var(--sun-deep)">➜</button>
+        </div>
+        <div id="tout" hidden>
+          <div class="tb-en" id="tout-en"></div>
+          <div class="btnrow">
+            <button class="tinybtn" id="tplay">🔊 anhören</button>
+            <button class="btn small green" id="tsend">➤ An Fred schicken</button>
+          </div>
+        </div>
+      </div>
       <div class="inputrow">
         <button class="micbtn" id="mic" aria-label="Sprechen">🎤</button>
         <input id="chat-input" type="text" autocomplete="off" placeholder="…oder hier tippen">
@@ -547,16 +577,18 @@ function speak(text){
 
 /* ---------------- Spracheingabe (Kind spricht) ---------------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let recog = null, listening = false;
+let recog = null, listening = false, micTarget = "chat";
 if (SR){
   recog = new SR();
-  recog.lang = "en-GB";
   recog.interimResults = false;
   recog.maxAlternatives = 1;
   recog.onresult = ev => {
     const text = ev.results[0][0].transcript;
+    const target = micTarget;
     stopMicUI();
-    if (text) childSays(text);
+    if (!text) return;
+    if (target === "trans"){ $("#tin").value = text; doTranslate(); }
+    else childSays(text);
   };
   recog.onerror = ev => {
     stopMicUI();
@@ -571,18 +603,30 @@ if (SR){
 function stopMicUI(){
   listening = false;
   $("#mic").classList.remove("listening");
+  $("#tmic").classList.remove("listening");
   $("#chat-input").placeholder = "…oder hier tippen";
+  $("#tin").placeholder = "Deutsches Wort oder Satz…";
 }
-$("#mic").addEventListener("click", () => {
+function startMic(target){
+  /* target "chat": Englisch für Fred - target "trans": Deutsch für die Übersetzungshilfe */
   if (!recog){ toast("Sprechen geht in diesem Browser leider nicht - tippe stattdessen!"); return; }
   if (listening){ recog.stop(); return; }
   try {
-    speechSynthesis && speechSynthesis.cancel();
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    micTarget = target;
+    recog.lang = target === "trans" ? "de-DE" : "en-GB";
     recog.start(); listening = true;
-    $("#mic").classList.add("listening");
-    $("#chat-input").placeholder = "🎤 Ich höre zu - sprich Englisch!";
+    if (target === "trans"){
+      $("#tmic").classList.add("listening");
+      $("#tin").placeholder = "🎤 Ich höre zu - sag es auf Deutsch!";
+    } else {
+      $("#mic").classList.add("listening");
+      $("#chat-input").placeholder = "🎤 Ich höre zu - sprich Englisch!";
+    }
   } catch(e){ stopMicUI(); }
-});
+}
+$("#mic").addEventListener("click", () => startMic("chat"));
+$("#tmic").addEventListener("click", () => startMic("trans"));
 
 /* ---------------- Navigation ---------------- */
 document.querySelectorAll("[data-go]").forEach(b => {
@@ -726,6 +770,7 @@ function startChat(t){
   aiMode = !!state.apiKey;
   state.transcript = [];
   $("#msgs").innerHTML = "";
+  $("#transbox").hidden = true; $("#tin").value = ""; $("#tout").hidden = true;
   chatPending = true;
   nav("chat");
 }
@@ -931,6 +976,116 @@ function parseFred(raw){
   return { reply: raw.slice(0, 200) || "Sorry, can you say that again?", de:"", suggestions:[] };
 }
 
+/* =====================================================================
+   ÜBERSETZUNGS-HILFE  (🇩🇪 -> 🇬🇧)
+   Mit API-Schlüssel übersetzt die KI alles; ohne hilft ein kleines
+   eingebautes Wörterbuch mit den wichtigsten Kinder-Wörtern.
+   ===================================================================== */
+const DICT = {
+  "hund":"dog","katze":"cat","pferd":"horse","wolf":"wolf","vogel":"bird","fisch":"fish",
+  "hase":"rabbit","kaninchen":"rabbit","maus":"mouse","baer":"bear","bär":"bear","löwe":"lion",
+  "tiger":"tiger","elefant":"elephant","affe":"monkey","schlange":"snake","spinne":"spider",
+  "kuh":"cow","schwein":"pig","schaf":"sheep","huhn":"chicken","ente":"duck","fuchs":"fox",
+  "schule":"school","freund":"friend","freundin":"friend","familie":"family","mama":"mum",
+  "papa":"dad","bruder":"brother","schwester":"sister","oma":"grandma","opa":"grandpa",
+  "haus":"house","garten":"garden","baum":"tree","blume":"flower","sonne":"sun","mond":"moon",
+  "wasser":"water","milch":"milk","brot":"bread","apfel":"apple","banane":"banana",
+  "pizza":"pizza","eis":"ice cream","kuchen":"cake","schokolade":"chocolate","käse":"cheese",
+  "rot":"red","blau":"blue","grün":"green","gelb":"yellow","schwarz":"black","weiß":"white",
+  "orange":"orange","lila":"purple","rosa":"pink","braun":"brown",
+  "eins":"one","zwei":"two","drei":"three","vier":"four","fünf":"five","sechs":"six",
+  "sieben":"seven","acht":"eight","neun":"nine","zehn":"ten","elf":"eleven","zwölf":"twelve",
+  "groß":"big","klein":"small","schnell":"fast","langsam":"slow","gut":"good","toll":"great",
+  "cool":"cool","stark":"strong","lustig":"funny","müde":"tired","hungrig":"hungry",
+  "ja":"yes","nein":"no","bitte":"please","danke":"thank you","hallo":"hello","tschüss":"bye",
+  "ich mag":"I like","ich habe":"I have","ich bin":"I am","ich spiele":"I play",
+  "ich baue":"I build","ich esse":"I eat","ich trinke":"I drink","ich kann":"I can",
+  "karate":"karate","fußball":"football","fahrrad":"bike","ball":"ball","spiel":"game",
+  "spielen":"play","bauen":"build","essen":"eat","trinken":"drink","laufen":"run",
+  "springen":"jump","schwimmen":"swim","singen":"sing","tanzen":"dance","malen":"paint",
+  "lesen":"read","schlafen":"sleep","lachen":"laugh",
+  "schwert":"sword","diamant":"diamond","gold":"gold","burg":"castle","höhle":"cave",
+  "haustier":"pet","lieblingstier":"favourite animal","werkstatt":"workshop","holz":"wood",
+  "hammer":"hammer","säge":"saw","nagel":"nail","sticker":"sticker","tauschen":"trade"
+};
+function dictLookup(q){
+  const clean = s => s.toLowerCase().trim().replace(/[.!?,;:]/g, "");
+  let s = clean(q);
+  const stripped = s.replace(/^(der|die|das|ein|eine|einen|dem|den)\s+/, "");
+  for (const t of TOPICS) for (const w of t.words){
+    if (clean(w.de) === s || clean(w.de) === stripped) return w.en;
+  }
+  return DICT[s] || DICT[stripped] || null;
+}
+
+let transBusy = false, lastTrans = "";
+function showTrans(en, miss){
+  const out = $("#tout"), el = $("#tout-en");
+  out.hidden = false;
+  el.textContent = en;
+  el.className = "tb-en" + (miss ? " miss" : "");
+  lastTrans = miss ? "" : en;
+  if (!miss) speak(en);
+}
+async function doTranslate(){
+  const q = $("#tin").value.trim();
+  if (!q || transBusy) return;
+  if (!state.apiKey){
+    const d = dictLookup(q);
+    if (d) showTrans(d, false);
+    else showTrans("Hmm, das kenne ich noch nicht. 🙈 Frag Mama oder Papa - oder mit KI-Schlüssel kann ich alles übersetzen!", true);
+    return;
+  }
+  transBusy = true;
+  showTrans("… ich überlege …", true);
+  const body = {
+    model: state.model,
+    max_tokens: 120,
+    system: "You help a 9-year-old German child (3rd grade, English beginner) say things in English. Translate the child's German input into VERY simple English a beginner can say - short words, short sentence. Reply with ONLY the English translation, nothing else. If the input is already English, reply with it unchanged (fix small mistakes).",
+    messages: [{ role:"user", content: q }]
+  };
+  if (state.model.indexOf("claude-opus-5") === 0) body.output_config = { effort:"low" };
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": state.apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error("http " + res.status);
+    const data = await res.json();
+    const tb = (data.content || []).find(b => b.type === "text");
+    let en = (tb ? tb.text : "").trim().replace(/^["']|["']$/g, "");
+    if (data.stop_reason === "refusal" || !en) throw new Error("empty");
+    showTrans(en, false);
+  } catch(e){
+    const d = dictLookup(q);
+    if (d) showTrans(d, false);
+    else showTrans("Ups, das hat gerade nicht geklappt. Probier's gleich nochmal! 🙈", true);
+  } finally {
+    transBusy = false;
+  }
+}
+$("#transtoggle").addEventListener("click", () => {
+  const box = $("#transbox");
+  box.hidden = !box.hidden;
+  if (!box.hidden) $("#tin").focus();
+});
+$("#tgo").addEventListener("click", doTranslate);
+$("#tin").addEventListener("keydown", ev => { if (ev.key === "Enter") doTranslate(); });
+$("#tplay").addEventListener("click", () => { if (lastTrans) speak(lastTrans); });
+$("#tsend").addEventListener("click", () => {
+  if (!lastTrans) return;
+  $("#transbox").hidden = true;
+  $("#tin").value = ""; $("#tout").hidden = true;
+  childSays(lastTrans);
+  lastTrans = "";
+});
+
 /* ---------------- Elternbereich ---------------- */
 function renderParents(){
   $("#set-name").value = state.name;
@@ -1009,6 +1164,14 @@ function confetti(){
 }
 
 /* ---------------- Start ---------------- */
+/* Wenn in einem anderen Tab/Fenster desselben Browsers z.B. der
+   API-Schlüssel eingetragen wird, übernimmt dieser Tab das sofort. */
+window.addEventListener("storage", ev => {
+  if (ev.key === "fredapp1"){
+    state = load();
+    if ($("#scr-home").classList.contains("on")) renderHome();
+  }
+});
 route();
 </script>
 </body>

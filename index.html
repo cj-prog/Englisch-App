@@ -1,0 +1,935 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦊</text></svg>">
+<title>Fred der Englisch-Fuchs</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;700;800&display=swap">
+<style>
+  :root{
+    --paper:#EDF6FA;      /* soft sky */
+    --card:#FFFFFF;
+    --ink:#22456B;        /* deep storybook blue */
+    --ink-soft:#5C7A9E;
+    --fox:#F08A24;        /* Fred orange */
+    --fox-deep:#C96A12;
+    --leaf:#3FA96F;
+    --leaf-deep:#2E8757;
+    --sun:#FFD65A;
+    --sun-deep:#E4B62E;
+    --berry:#E2618B;
+    --sky-line:#CFE4EF;
+    --bubble-fred:#FFF3E2;
+    --bubble-kid:#DFF0FF;
+    --radius:22px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  [hidden]{display:none!important}
+  html{background:var(--paper)}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Nunito","Trebuchet MS",system-ui,sans-serif;
+    font-size:17px;line-height:1.5;min-height:100vh;
+  }
+  h1,h2,h3,.btn,.chip{font-family:"Baloo 2","Comic Sans MS","Nunito",sans-serif}
+  h1{font-size:2rem;font-weight:800;margin:.2em 0;text-wrap:balance}
+  h2{font-size:1.5rem;font-weight:800;margin:.2em 0;text-wrap:balance}
+  .app{max-width:640px;margin:0 auto;padding:16px 16px 40px;position:relative}
+  .screen{display:none;animation:fadein .25s ease}
+  .screen.on{display:block}
+  @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none!important;transition:none!important}
+  }
+
+  /* ---------- buttons ---------- */
+  .btn{
+    display:flex;align-items:center;gap:14px;width:100%;
+    background:var(--card);color:var(--ink);border:0;border-radius:var(--radius);
+    border-bottom:5px solid var(--sky-line);
+    padding:18px 20px;font-size:1.25rem;font-weight:800;cursor:pointer;
+    text-align:left;box-shadow:0 2px 6px rgba(34,69,107,.07);
+  }
+  .btn:active{transform:translateY(3px);border-bottom-width:2px}
+  .btn .big{font-size:1.9rem}
+  .btn.primary{background:var(--fox);border-bottom-color:var(--fox-deep);color:#fff}
+  .btn.green{background:var(--leaf);border-bottom-color:var(--leaf-deep);color:#fff}
+  .btn.sun{background:var(--sun);border-bottom-color:var(--sun-deep);color:var(--ink)}
+  .btn.small{width:auto;padding:10px 18px;font-size:1rem;border-radius:16px}
+  .btnrow{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+  .menu{display:flex;flex-direction:column;gap:14px;margin-top:20px}
+  .iconbtn{
+    background:var(--card);border:0;border-radius:50%;width:46px;height:46px;
+    font-size:1.3rem;cursor:pointer;border-bottom:3px solid var(--sky-line);
+    display:grid;place-items:center;color:var(--ink);
+  }
+  .iconbtn:active{transform:translateY(2px)}
+
+  /* ---------- header ---------- */
+  .topbar{display:flex;align-items:center;gap:10px;margin-bottom:8px;min-height:46px}
+  .topbar .spacer{flex:1}
+  .topbar .title{font-family:"Baloo 2",sans-serif;font-weight:800;font-size:1.2rem}
+
+  /* ---------- Fred hero ---------- */
+  .hero{text-align:center;padding:10px 0 4px}
+  .fred-face{
+    width:130px;height:130px;border-radius:50%;margin:0 auto;
+    background:radial-gradient(circle at 35% 30%,#FFC98A,var(--fox));
+    display:grid;place-items:center;font-size:74px;
+    border:6px solid #fff;box-shadow:0 6px 18px rgba(240,138,36,.35);
+    animation:bob 3.2s ease-in-out infinite;user-select:none;
+  }
+  .fred-face.mini{width:44px;height:44px;font-size:26px;border-width:3px;animation:none;box-shadow:none;flex:none}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}
+  .hero .hello{color:var(--ink-soft);font-weight:700;margin-top:10px}
+
+  /* ---------- topic cards ---------- */
+  .topiclist{display:flex;flex-direction:column;gap:14px;margin-top:18px}
+  .topic-done{margin-left:auto;font-size:1.2rem}
+
+  /* ---------- lesson ---------- */
+  .dots{display:flex;gap:8px;justify-content:center;margin:14px 0}
+  .dots i{width:12px;height:12px;border-radius:50%;background:var(--sky-line)}
+  .dots i.hit{background:var(--fox)}
+  .wordcard{
+    background:var(--card);border-radius:28px;padding:34px 22px;text-align:center;
+    border-bottom:6px solid var(--sky-line);box-shadow:0 4px 14px rgba(34,69,107,.08);
+  }
+  .wordcard .pic{font-size:88px;line-height:1}
+  .wordcard .en{font-family:"Baloo 2",sans-serif;font-size:2.1rem;font-weight:800;margin-top:10px}
+  .wordcard .de{color:var(--ink-soft);font-weight:700;font-size:1.1rem;margin-top:2px}
+
+  /* ---------- chat ---------- */
+  .chatwrap{display:flex;flex-direction:column;height:calc(100vh - 96px);max-height:820px}
+  .msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:8px 2px 16px}
+  .msg{display:flex;gap:10px;align-items:flex-end;max-width:88%}
+  .msg .bubble{
+    padding:12px 16px;border-radius:20px;font-size:1.15rem;font-weight:700;
+    box-shadow:0 2px 5px rgba(34,69,107,.08);
+  }
+  .msg.fred{align-self:flex-start}
+  .msg.fred .bubble{background:var(--bubble-fred);border-bottom-left-radius:6px}
+  .msg.kid{align-self:flex-end;flex-direction:row-reverse}
+  .msg.kid .bubble{background:var(--bubble-kid);border-bottom-right-radius:6px}
+  .msg .de-hint{display:block;font-size:.85rem;font-weight:700;color:var(--ink-soft);margin-top:6px}
+  .msg .tools{display:flex;gap:6px;margin-top:8px}
+  .tinybtn{
+    border:0;background:rgba(34,69,107,.08);color:var(--ink);border-radius:12px;
+    font-size:.85rem;font-weight:800;padding:4px 10px;cursor:pointer;font-family:"Nunito",sans-serif;
+  }
+  .chips{display:flex;gap:10px;flex-wrap:wrap;padding:10px 0}
+  .chip{
+    border:0;background:var(--card);border-radius:18px;border-bottom:4px solid var(--sky-line);
+    padding:10px 14px;font-size:1.05rem;font-weight:700;color:var(--ink);cursor:pointer;text-align:left;
+  }
+  .chip:active{transform:translateY(2px)}
+  .chip small{display:block;font-family:"Nunito",sans-serif;font-weight:700;color:var(--ink-soft);font-size:.8rem}
+  .inputrow{display:flex;gap:10px;align-items:center}
+  .inputrow input{
+    flex:1;border:2px solid var(--sky-line);border-radius:18px;padding:13px 16px;
+    font-size:1.05rem;font-family:"Nunito",sans-serif;font-weight:700;color:var(--ink);
+    background:var(--card);min-width:0;
+  }
+  .inputrow input:focus{outline:3px solid var(--sun)}
+  .micbtn{
+    width:58px;height:58px;border-radius:50%;border:0;font-size:1.5rem;cursor:pointer;flex:none;
+    background:var(--berry);color:#fff;border-bottom:4px solid #B84368;display:grid;place-items:center;
+  }
+  .micbtn.listening{animation:pulse 1s infinite;background:var(--leaf);border-bottom-color:var(--leaf-deep)}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+  .thinking{color:var(--ink-soft);font-weight:700;font-size:.95rem;padding:4px 2px}
+
+  /* ---------- stickers ---------- */
+  .stickergrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px;margin-top:16px}
+  .sticker{
+    background:var(--card);border-radius:20px;padding:12px 6px;text-align:center;
+    border-bottom:4px solid var(--sky-line);
+  }
+  .sticker .pic{font-size:2.4rem}
+  .sticker .nm{font-weight:800;font-size:.9rem;margin-top:4px}
+  .sticker .de{font-size:.75rem;color:var(--ink-soft);font-weight:700}
+  .sticker.locked{opacity:.45;filter:grayscale(1)}
+  .sticker.rare{border-bottom-color:var(--sun-deep);background:linear-gradient(180deg,#FFF8E3,#fff)}
+  .sticker.epic{border-bottom-color:var(--berry);background:linear-gradient(180deg,#FDEAF1,#fff)}
+  .sticker .cnt{font-size:.75rem;color:var(--fox-deep);font-weight:800}
+  .reveal{
+    text-align:center;padding:26px 18px;background:var(--card);border-radius:28px;
+    border-bottom:6px solid var(--sun-deep);margin-top:18px;
+    box-shadow:0 6px 18px rgba(228,182,46,.3);
+  }
+  .reveal .pic{font-size:96px;display:inline-block;animation:pop .5s cubic-bezier(.2,1.6,.5,1)}
+  @keyframes pop{from{transform:scale(0) rotate(-30deg)}to{transform:scale(1) rotate(0)}}
+  .badge{display:inline-block;background:var(--sun);border-radius:12px;padding:2px 12px;font-weight:800;font-size:.85rem}
+  .badge.epic{background:var(--berry);color:#fff}
+
+  /* ---------- parents ---------- */
+  .panel{background:var(--card);border-radius:20px;padding:18px;border-bottom:4px solid var(--sky-line);margin-top:14px}
+  .panel label{display:block;font-weight:800;margin-bottom:6px}
+  .panel input,.panel select{
+    width:100%;border:2px solid var(--sky-line);border-radius:14px;padding:11px 14px;
+    font-size:1rem;font-family:"Nunito",sans-serif;background:#fff;color:var(--ink);
+  }
+  .panel .note{font-size:.9rem;color:var(--ink-soft);margin-top:8px}
+  .wordpills{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .wordpills span{background:var(--bubble-kid);border-radius:12px;padding:4px 12px;font-weight:800;font-size:.9rem}
+  .transcript{max-height:260px;overflow-y:auto;font-size:.92rem;margin-top:8px}
+  .transcript p{margin:4px 0}
+  .transcript b{color:var(--fox-deep)}
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+    background:var(--ink);color:#fff;font-weight:800;padding:12px 22px;border-radius:18px;
+    opacity:0;pointer-events:none;transition:opacity .3s;z-index:50;max-width:90vw;text-align:center;
+  }
+  .toast.show{opacity:1}
+  .confetti{position:fixed;inset:0;pointer-events:none;z-index:40}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ============ HOME ============ -->
+  <section class="screen on" id="scr-home">
+    <div class="topbar">
+      <span class="title">Fred der Englisch-Fuchs</span>
+      <span class="spacer"></span>
+      <button class="iconbtn" id="btn-parents" aria-label="Elternbereich">⚙️</button>
+    </div>
+    <div class="hero">
+      <div class="fred-face" id="fred-hero" role="img" aria-label="Fred der Fuchs">🦊</div>
+      <h1 id="home-greet">Hello!</h1>
+      <div class="hello">Ich bin Fred aus England. Lass uns Englisch lernen!</div>
+    </div>
+    <div class="menu">
+      <button class="btn sun" data-go="topics-learn"><span class="big">📚</span> Wörter lernen</button>
+      <button class="btn primary" data-go="topics-chat"><span class="big">💬</span> Mit Fred reden</button>
+      <button class="btn" data-go="album"><span class="big">⭐</span> Meine Sticker <span id="sticker-count" style="margin-left:auto;color:var(--fox-deep)"></span></button>
+    </div>
+  </section>
+
+  <!-- ============ TOPIC SELECT ============ -->
+  <section class="screen" id="scr-topics">
+    <div class="topbar">
+      <button class="iconbtn" data-go="home" aria-label="Zurück">←</button>
+      <span class="title" id="topics-title">Thema wählen</span>
+    </div>
+    <div class="topiclist" id="topiclist"></div>
+  </section>
+
+  <!-- ============ LESSON ============ -->
+  <section class="screen" id="scr-lesson">
+    <div class="topbar">
+      <button class="iconbtn" data-go="topics-learn" aria-label="Zurück">←</button>
+      <span class="title" id="lesson-title"></span>
+    </div>
+    <div class="dots" id="lesson-dots"></div>
+    <div class="wordcard" id="wordcard">
+      <div class="pic" id="wc-pic"></div>
+      <div class="en" id="wc-en"></div>
+      <div class="de" id="wc-de"></div>
+      <div class="btnrow" style="justify-content:center">
+        <button class="btn sun small" id="wc-play">🔊 Anhören</button>
+        <button class="btn green small" id="wc-next">Weiter ➜</button>
+      </div>
+    </div>
+    <p style="text-align:center;color:var(--ink-soft);font-weight:700;font-size:.95rem">
+      Tipp: Erst anhören, dann laut nachsprechen! 🗣️
+    </p>
+  </section>
+
+  <!-- ============ REWARD ============ -->
+  <section class="screen" id="scr-reward">
+    <div class="hero"><h1 id="reward-head">Super gemacht! 🎉</h1></div>
+    <div class="reveal">
+      <div class="pic" id="rw-pic"></div>
+      <h2 id="rw-name"></h2>
+      <div id="rw-de" style="color:var(--ink-soft);font-weight:700"></div>
+      <div style="margin-top:8px"><span class="badge" id="rw-badge"></span></div>
+      <p style="font-weight:700">Neuer Sticker für dein Album!</p>
+    </div>
+    <div class="menu">
+      <button class="btn" data-go="album"><span class="big">⭐</span> Album ansehen</button>
+      <button class="btn primary" data-go="home"><span class="big">🏠</span> Zurück zu Fred</button>
+    </div>
+  </section>
+
+  <!-- ============ CHAT ============ -->
+  <section class="screen" id="scr-chat">
+    <div class="chatwrap">
+      <div class="topbar">
+        <button class="iconbtn" id="chat-back" aria-label="Zurück">←</button>
+        <div class="fred-face mini">🦊</div>
+        <span class="title">Fred</span>
+        <span class="spacer"></span>
+        <button class="btn small sun" id="chat-done">Fertig ✔</button>
+      </div>
+      <div class="msgs" id="msgs"></div>
+      <div class="thinking" id="thinking" hidden>Fred denkt nach…</div>
+      <div class="chips" id="chips"></div>
+      <div class="inputrow">
+        <button class="micbtn" id="mic" aria-label="Sprechen">🎤</button>
+        <input id="chat-input" type="text" autocomplete="off" placeholder="…oder hier tippen">
+        <button class="iconbtn" id="send" aria-label="Senden" style="background:var(--leaf);color:#fff;border-bottom-color:var(--leaf-deep)">➤</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ALBUM ============ -->
+  <section class="screen" id="scr-album">
+    <div class="topbar">
+      <button class="iconbtn" data-go="home" aria-label="Zurück">←</button>
+      <span class="title">Mein Sticker-Album</span>
+    </div>
+    <p style="color:var(--ink-soft);font-weight:700">Lerne Wörter und rede mit Fred, um alle Sticker zu sammeln!</p>
+    <div class="stickergrid" id="stickergrid"></div>
+  </section>
+
+  <!-- ============ PARENTS ============ -->
+  <section class="screen" id="scr-parents">
+    <div class="topbar">
+      <button class="iconbtn" data-go="home" aria-label="Zurück">←</button>
+      <span class="title">Elternbereich</span>
+    </div>
+
+    <div class="panel">
+      <label for="set-name">Name des Kindes</label>
+      <input id="set-name" type="text">
+    </div>
+
+    <div class="panel">
+      <label for="set-key">Anthropic API-Schlüssel (für den echten KI-Fred)</label>
+      <input id="set-key" type="password" placeholder="sk-ant-…">
+      <div class="note">
+        Ohne Schlüssel läuft Fred im <b>Übungsmodus</b> mit vorbereiteten Gesprächen.
+        Einen Schlüssel bekommt ihr auf <b>console.anthropic.com</b> (Guthaben aufladen,
+        z.&nbsp;B. 5&nbsp;$ – mehr kann nie abgebucht werden). Der Schlüssel wird nur auf
+        diesem Gerät gespeichert.
+      </div>
+    </div>
+
+    <div class="panel">
+      <label for="set-model">KI-Modell</label>
+      <select id="set-model">
+        <option value="claude-opus-5">Claude Opus 5 – beste Qualität</option>
+        <option value="claude-haiku-4-5">Claude Haiku 4.5 – günstiger &amp; schneller</option>
+      </select>
+      <div class="note">Bei täglicher Nutzung grob: Opus ≈ 5–10&nbsp;€/Monat, Haiku ≈ 1–2&nbsp;€/Monat.</div>
+    </div>
+
+    <div class="panel">
+      <label>Gelernte Wörter (<span id="learned-count">0</span>)</label>
+      <div class="wordpills" id="learned-list"></div>
+    </div>
+
+    <div class="panel">
+      <label>Letztes Gespräch</label>
+      <div class="transcript" id="transcript"><p style="color:var(--ink-soft)">Noch kein Gespräch.</p></div>
+    </div>
+
+    <div class="panel">
+      <button class="btn small" id="btn-reset" style="background:#F6DEE7;border-bottom-color:var(--berry)">Alle Daten zurücksetzen</button>
+      <div class="note">Löscht Sticker, Lernfortschritt und Einstellungen auf diesem Gerät.</div>
+    </div>
+  </section>
+
+</div>
+<div class="toast" id="toast"></div>
+<canvas class="confetti" id="confetti" hidden></canvas>
+
+<script>
+"use strict";
+/* =====================================================================
+   Fred der Englisch-Fuchs – Prototyp
+   Ein Lern-Kumpel für Kinder in der 3. Klasse (erste englische Wörter).
+   ===================================================================== */
+
+/* ---------------- Daten: Themen & Wortschatz-Kisten ---------------- */
+const TOPICS = [
+  {
+    id: "hello", emoji: "👋", title: "Hallo Fred!",
+    words: [
+      { en: "Hello!",                de: "Hallo!",                      pic: "👋" },
+      { en: "I'm Jonah.",            de: "Ich bin Jonah.",              pic: "🙋" },
+      { en: "How are you?",          de: "Wie geht es dir?",            pic: "❓" },
+      { en: "I'm fine!",             de: "Mir geht es gut!",            pic: "😄" },
+      { en: "What's your name?",     de: "Wie heißt du?",               pic: "🏷️" },
+      { en: "Nice to meet you!",     de: "Schön, dich kennenzulernen!", pic: "🤝" },
+      { en: "Bye!",                  de: "Tschüss!",                    pic: "👋" }
+    ],
+    chat: [
+      { fred: "Hello! I'm Fred! What's your name?", de: "Hallo! Ich bin Fred! Wie heißt du?",
+        sugg: [ { en: "I'm Jonah.", de: "Ich bin Jonah." }, { en: "Hello Fred!", de: "Hallo Fred!" }, { en: "My name is Jonah.", de: "Mein Name ist Jonah." } ] },
+      { fred: "Nice to meet you! How are you?", de: "Schön, dich kennenzulernen! Wie geht's dir?",
+        sugg: [ { en: "I'm fine!", de: "Mir geht's gut!" }, { en: "I'm great!", de: "Mir geht's super!" }, { en: "How are you?", de: "Wie geht's dir?" } ] },
+      { fred: "I'm great! I'm a fox from England. Cool, right?", de: "Mir geht's super! Ich bin ein Fuchs aus England. Cool, oder?",
+        sugg: [ { en: "Yes, cool!", de: "Ja, cool!" }, { en: "Wow!", de: "Wow!" }, { en: "A fox?!", de: "Ein Fuchs?!" } ] },
+      { fred: "Yes! Foxes are very clever. Are you clever too?", de: "Ja! Füchse sind sehr schlau. Bist du auch schlau?",
+        sugg: [ { en: "Yes!", de: "Ja!" }, { en: "I think so!", de: "Ich glaube schon!" }, { en: "Very clever!", de: "Sehr schlau!" } ] },
+      { fred: "I knew it! You speak English very well!", de: "Wusste ich's doch! Du sprichst schon richtig gut Englisch!",
+        sugg: [ { en: "Thank you!", de: "Danke!" }, { en: "Really?", de: "Wirklich?" }, { en: "You too!", de: "Du auch!" } ] },
+      { fred: "See you soon! Bye, my friend!", de: "Bis bald! Tschüss, mein Freund!", end: true,
+        sugg: [ { en: "Bye, Fred!", de: "Tschüss, Fred!" }, { en: "See you!", de: "Bis bald!" }, { en: "Bye bye!", de: "Tschü-hüss!" } ] }
+    ]
+  },
+  {
+    id: "animals", emoji: "🐾", title: "Tiere",
+    words: [
+      { en: "dog",                        de: "Hund",                        pic: "🐕" },
+      { en: "cat",                        de: "Katze",                       pic: "🐈" },
+      { en: "wolf",                       de: "Wolf",                        pic: "🐺" },
+      { en: "horse",                      de: "Pferd",                       pic: "🐴" },
+      { en: "I like dogs.",               de: "Ich mag Hunde.",              pic: "❤️" },
+      { en: "My favourite animal is...",  de: "Mein Lieblingstier ist...",   pic: "🏆" },
+      { en: "Do you have a pet?",         de: "Hast du ein Haustier?",       pic: "🏠" }
+    ],
+    chat: [
+      { fred: "Hi! I love animals! Do you like animals?", de: "Hi! Ich liebe Tiere! Magst du Tiere?",
+        sugg: [ { en: "Yes, I like animals!", de: "Ja, ich mag Tiere!" }, { en: "I like dogs.", de: "Ich mag Hunde." }, { en: "I like cats.", de: "Ich mag Katzen." } ] },
+      { fred: "Me too! My favourite animal is the wolf. And yours?", de: "Ich auch! Mein Lieblingstier ist der Wolf. Und deins?",
+        sugg: [ { en: "My favourite animal is the dog.", de: "Mein Lieblingstier ist der Hund." }, { en: "I like wolves too!", de: "Ich mag auch Wölfe!" }, { en: "The horse!", de: "Das Pferd!" } ] },
+      { fred: "Great choice! Do you have a pet?", de: "Super Wahl! Hast du ein Haustier?",
+        sugg: [ { en: "Yes, I have a pet.", de: "Ja, ich habe ein Haustier." }, { en: "No, I don't.", de: "Nein, habe ich nicht." }, { en: "I want a dog!", de: "Ich will einen Hund!" } ] },
+      { fred: "Cool! Animals are the best. Cats say 'meow' - what do dogs say?", de: "Cool! Tiere sind das Beste. Katzen machen 'miau' - was machen Hunde?",
+        sugg: [ { en: "Woof woof!", de: "Wuff wuff!" }, { en: "Dogs say woof!", de: "Hunde machen wuff!" }, { en: "I don't know.", de: "Ich weiß nicht." } ] },
+      { fred: "Haha, yes! Woof woof! You know a lot about animals!", de: "Haha, ja! Wuff wuff! Du weißt viel über Tiere!",
+        sugg: [ { en: "Thank you!", de: "Danke!" }, { en: "Animals are cool!", de: "Tiere sind cool!" }, { en: "Yes!", de: "Ja!" } ] },
+      { fred: "Bye bye! High five, animal friend!", de: "Tschüss! High five, Tierfreund!", end: true,
+        sugg: [ { en: "Bye, Fred!", de: "Tschüss, Fred!" }, { en: "High five!", de: "High five!" }, { en: "See you!", de: "Bis bald!" } ] }
+    ]
+  },
+  {
+    id: "minecraft", emoji: "⛏️", title: "Minecraft",
+    words: [
+      { en: "I play Minecraft.",      de: "Ich spiele Minecraft.",       pic: "🎮" },
+      { en: "Let's build a house!",   de: "Lass uns ein Haus bauen!",    pic: "🏠" },
+      { en: "diamond",                de: "Diamant",                     pic: "💎" },
+      { en: "sword",                  de: "Schwert",                     pic: "⚔️" },
+      { en: "Watch out, a creeper!",  de: "Pass auf, ein Creeper!",      pic: "🟢" },
+      { en: "What do you build?",     de: "Was baust du?",               pic: "🧱" },
+      { en: "That's cool!",           de: "Das ist cool!",               pic: "😎" }
+    ],
+    chat: [
+      { fred: "Hi! Guess what - I play Minecraft! Do you play Minecraft?", de: "Hi! Rate mal - ich spiele Minecraft! Spielst du Minecraft?",
+        sugg: [ { en: "Yes, I play Minecraft!", de: "Ja, ich spiele Minecraft!" }, { en: "I love Minecraft!", de: "Ich liebe Minecraft!" }, { en: "Yes!", de: "Ja!" } ] },
+      { fred: "Awesome! What do you build?", de: "Super! Was baust du?",
+        sugg: [ { en: "I build a house.", de: "Ich baue ein Haus." }, { en: "I build a castle.", de: "Ich baue eine Burg." }, { en: "Many things!", de: "Viele Sachen!" } ] },
+      { fred: "That's cool! I dig for diamonds. Do you like diamonds?", de: "Das ist cool! Ich grabe nach Diamanten. Magst du Diamanten?",
+        sugg: [ { en: "Yes, I like diamonds!", de: "Ja, ich mag Diamanten!" }, { en: "Diamonds are cool!", de: "Diamanten sind cool!" }, { en: "I have a diamond sword!", de: "Ich habe ein Diamantschwert!" } ] },
+      { fred: "Wow! Watch out - a creeper! Run!", de: "Wow! Pass auf - ein Creeper! Lauf!",
+        sugg: [ { en: "Oh no!", de: "Oh nein!" }, { en: "Run, Fred, run!", de: "Lauf, Fred, lauf!" }, { en: "I have a sword!", de: "Ich habe ein Schwert!" } ] },
+      { fred: "Phew, that was close! You are a Minecraft hero!", de: "Puh, das war knapp! Du bist ein Minecraft-Held!",
+        sugg: [ { en: "Thank you!", de: "Danke!" }, { en: "We are heroes!", de: "Wir sind Helden!" }, { en: "That was cool!", de: "Das war cool!" } ] },
+      { fred: "Let's build a house next time! Bye!", de: "Nächstes Mal bauen wir ein Haus! Tschüss!", end: true,
+        sugg: [ { en: "Yes! Bye, Fred!", de: "Ja! Tschüss, Fred!" }, { en: "See you!", de: "Bis bald!" }, { en: "Bye bye!", de: "Tschü-hüss!" } ] }
+    ]
+  }
+];
+
+/* ---------------- Sticker ---------------- */
+const STICKERS = [
+  { id:"barky",   pic:"🐶", nm:"Barky",        de:"der Bellhund",      r:"common" },
+  { id:"whisker", pic:"🐱", nm:"Whiskers",     de:"die Schnurrkatze",  r:"common" },
+  { id:"hoppy",   pic:"🐸", nm:"Hoppy",        de:"der Hüpffrosch",    r:"common" },
+  { id:"chicky",  pic:"🐤", nm:"Chicky",       de:"das Küken",         r:"common" },
+  { id:"speedy",  pic:"🐢", nm:"Speedy",       de:"die Turbo-Schildkröte", r:"common" },
+  { id:"woody",   pic:"🪵", nm:"Woody",        de:"der Werkstatt-Klotz", r:"common" },
+  { id:"kicky",   pic:"🥋", nm:"Kicky",        de:"der Karate-Gürtel", r:"common" },
+  { id:"blocky",  pic:"🧱", nm:"Blocky",       de:"der Baustein",      r:"common" },
+  { id:"sparkle", pic:"🦄", nm:"Sparkle",      de:"das Glitzer-Einhorn", r:"rare" },
+  { id:"shadow",  pic:"🐺", nm:"Shadow",       de:"der Nachtwolf",     r:"rare" },
+  { id:"blaze",   pic:"🐉", nm:"Blaze",        de:"der Feuerdrache",   r:"rare" },
+  { id:"chompy",  pic:"🦈", nm:"Chompy",       de:"der Schnapphai",    r:"rare" },
+  { id:"diamond", pic:"💎", nm:"Mega Diamond", de:"der Mega-Diamant",  r:"epic" },
+  { id:"creeper", pic:"🧨", nm:"Boom Creeper", de:"der Boom-Creeper",  r:"epic" },
+  { id:"goldfred",pic:"🌟", nm:"Golden Fred",  de:"der goldene Fred",  r:"epic" }
+];
+const RARITY_DE = { common:"Normal", rare:"Selten ✨", epic:"SUPER-SELTEN 💥" };
+
+/* ---------------- Speicher ---------------- */
+const DEFAULTS = { name:"Jonah", apiKey:"", model:"claude-opus-5",
+                   learned:[], stickers:[], done:{}, transcript:[] };
+let state = load();
+function load(){
+  try {
+    const raw = localStorage.getItem("fredapp1");
+    if (raw) return Object.assign({}, DEFAULTS, JSON.parse(raw));
+  } catch(e){ /* Speicher gesperrt oder kaputt -> Standardwerte */ }
+  return Object.assign({}, DEFAULTS);
+}
+function save(){
+  try { localStorage.setItem("fredapp1", JSON.stringify(state)); } catch(e){}
+}
+
+/* ---------------- kleine Helfer ---------------- */
+const $ = s => document.querySelector(s);
+function show(id){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("on"));
+  $("#scr-" + id).classList.add("on");
+  window.scrollTo(0,0);
+}
+function toast(txt, ms){
+  const t = $("#toast");
+  t.textContent = txt; t.classList.add("show");
+  clearTimeout(t._tm);
+  t._tm = setTimeout(() => t.classList.remove("show"), ms || 2600);
+}
+function esc(s){
+  const d = document.createElement("div"); d.textContent = s; return d.innerHTML;
+}
+
+/* ---------------- Sprachausgabe (Fred spricht) ---------------- */
+let voice = null;
+function pickVoice(){
+  const vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+  voice = vs.find(v => v.lang === "en-GB") || vs.find(v => v.lang && v.lang.startsWith("en")) || null;
+}
+if (window.speechSynthesis){
+  pickVoice();
+  speechSynthesis.onvoiceschanged = pickVoice;
+}
+function speak(text){
+  if (!window.speechSynthesis) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "en-GB"; u.rate = 0.85; u.pitch = 1.15;
+  if (voice) u.voice = voice;
+  speechSynthesis.speak(u);
+}
+
+/* ---------------- Spracheingabe (Kind spricht) ---------------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recog = null, listening = false;
+if (SR){
+  recog = new SR();
+  recog.lang = "en-GB";
+  recog.interimResults = false;
+  recog.maxAlternatives = 1;
+  recog.onresult = ev => {
+    const text = ev.results[0][0].transcript;
+    stopMicUI();
+    if (text) childSays(text);
+  };
+  recog.onerror = ev => {
+    stopMicUI();
+    if (ev.error === "not-allowed" || ev.error === "service-not-allowed"){
+      toast("Mikrofon nicht erlaubt - du kannst tippen oder Antworten antippen!");
+    } else if (ev.error !== "aborted" && ev.error !== "no-speech"){
+      toast("Ups, ich habe dich nicht verstanden. Probier's nochmal!");
+    }
+  };
+  recog.onend = stopMicUI;
+}
+function stopMicUI(){ listening = false; $("#mic").classList.remove("listening"); }
+$("#mic").addEventListener("click", () => {
+  if (!recog){ toast("Sprechen geht in diesem Browser leider nicht - tippe stattdessen!"); return; }
+  if (listening){ recog.stop(); return; }
+  try {
+    speechSynthesis && speechSynthesis.cancel();
+    recog.start(); listening = true;
+    $("#mic").classList.add("listening");
+  } catch(e){ stopMicUI(); }
+});
+
+/* ---------------- Navigation ---------------- */
+document.querySelectorAll("[data-go]").forEach(b => {
+  b.addEventListener("click", () => {
+    const go = b.dataset.go;
+    if (go === "topics-learn") openTopics("learn");
+    else if (go === "topics-chat") openTopics("chat");
+    else if (go === "album") { renderAlbum(); show("album"); }
+    else show(go);
+    if (go === "home") renderHome();
+  });
+});
+$("#btn-parents").addEventListener("click", () => {
+  const a = 6, b = 7;
+  const ans = prompt("Elternbereich - kleine Rechenaufgabe: " + a + " × " + b + " = ?");
+  if (ans === null) return;
+  if (parseInt(ans, 10) === a * b){ renderParents(); show("parents"); }
+  else toast("Das war leider falsch. 🙈");
+});
+
+/* ---------------- Home ---------------- */
+function renderHome(){
+  $("#home-greet").textContent = "Hello, " + state.name + "!";
+  $("#sticker-count").textContent = state.stickers.length ? state.stickers.length + " ⭐" : "";
+}
+$("#fred-hero").addEventListener("click", () => speak("Hello " + state.name + "! Let's learn English!"));
+
+/* ---------------- Themen-Auswahl ---------------- */
+let mode = "learn";
+function openTopics(m){
+  mode = m;
+  $("#topics-title").textContent = m === "learn" ? "Was willst du lernen?" : "Worüber reden wir?";
+  const list = $("#topiclist");
+  list.innerHTML = "";
+  TOPICS.forEach(t => {
+    const b = document.createElement("button");
+    b.className = "btn";
+    const doneKey = m + ":" + t.id;
+    b.innerHTML = '<span class="big">' + t.emoji + '</span> ' + esc(t.title) +
+                  (state.done[doneKey] ? '<span class="topic-done">✅</span>' : "");
+    b.addEventListener("click", () => m === "learn" ? startLesson(t) : startChat(t));
+    list.appendChild(b);
+  });
+  show("topics");
+}
+
+/* ---------------- Wortschatz-Kiste ---------------- */
+let lesson = null, li = 0;
+function startLesson(t){
+  lesson = t; li = 0;
+  $("#lesson-title").textContent = t.emoji + " " + t.title;
+  renderWord();
+  show("lesson");
+}
+function renderWord(){
+  const w = lesson.words[li];
+  const en = w.en.replace("Jonah", state.name);
+  $("#wc-pic").textContent = w.pic;
+  $("#wc-en").textContent = en;
+  $("#wc-de").textContent = w.de.replace("Jonah", state.name);
+  const dots = $("#lesson-dots");
+  dots.innerHTML = "";
+  lesson.words.forEach((_, i) => {
+    const d = document.createElement("i");
+    if (i <= li) d.classList.add("hit");
+    dots.appendChild(d);
+  });
+  speak(en);
+}
+$("#wc-play").addEventListener("click", () => speak($("#wc-en").textContent));
+$("#wc-next").addEventListener("click", () => {
+  const w = lesson.words[li];
+  if (!state.learned.includes(w.en)) state.learned.push(w.en);
+  li++;
+  if (li < lesson.words.length){ renderWord(); }
+  else {
+    state.done["learn:" + lesson.id] = true;
+    save();
+    giveSticker("Wortschatz-Kiste geschafft! 🎉");
+  }
+});
+
+/* ---------------- Sticker vergeben ---------------- */
+function randomSticker(){
+  const roll = Math.random();
+  const r = roll < 0.10 ? "epic" : roll < 0.40 ? "rare" : "common";
+  const pool = STICKERS.filter(s => s.r === r);
+  const missing = pool.filter(s => !state.stickers.includes(s.id));
+  const pick = (missing.length ? missing : pool)[Math.floor(Math.random() * (missing.length ? missing.length : pool.length))];
+  return pick;
+}
+function giveSticker(headline){
+  const s = randomSticker();
+  state.stickers.push(s.id);
+  save();
+  $("#reward-head").textContent = headline;
+  $("#rw-pic").textContent = s.pic;
+  $("#rw-name").textContent = s.nm;
+  $("#rw-de").textContent = s.de;
+  const badge = $("#rw-badge");
+  badge.textContent = RARITY_DE[s.r];
+  badge.className = "badge" + (s.r === "epic" ? " epic" : "");
+  show("reward");
+  speak("Well done, " + state.name + "!");
+  confetti();
+}
+
+/* ---------------- Album ---------------- */
+function renderAlbum(){
+  const g = $("#stickergrid");
+  g.innerHTML = "";
+  STICKERS.forEach(s => {
+    const n = state.stickers.filter(id => id === s.id).length;
+    const d = document.createElement("div");
+    d.className = "sticker " + s.r + (n ? "" : " locked");
+    d.innerHTML = '<div class="pic">' + (n ? s.pic : "❔") + '</div>' +
+                  '<div class="nm">' + (n ? esc(s.nm) : "???") + '</div>' +
+                  '<div class="de">' + (n ? esc(s.de) : RARITY_DE[s.r]) + '</div>' +
+                  (n > 1 ? '<div class="cnt">×' + n + '</div>' : "");
+    if (n) d.addEventListener("click", () => speak(s.nm));
+    g.appendChild(d);
+  });
+}
+
+/* =====================================================================
+   CHAT MIT FRED
+   Zwei Modi: Übungsmodus (feste Dialoge) und KI-Modus (Claude-API).
+   ===================================================================== */
+let chatTopic = null, step = 0, kidTurns = 0, history = [], aiMode = false, busy = false;
+
+function startChat(t){
+  chatTopic = t; step = 0; kidTurns = 0; history = [];
+  aiMode = !!state.apiKey;
+  state.transcript = [];
+  $("#msgs").innerHTML = "";
+  show("chat");
+  if (aiMode){
+    askFredAI("START");
+  } else {
+    fredSays(scriptLine(t.chat[0]));
+  }
+}
+function scriptLine(stepObj){
+  return {
+    reply: stepObj.fred.replace(/Jonah/g, state.name),
+    de: stepObj.de.replace(/Jonah/g, state.name),
+    suggestions: stepObj.sugg,
+    end: !!stepObj.end
+  };
+}
+
+function fredSays(msg){
+  addMsg("fred", msg.reply, msg.de);
+  speak(msg.reply);
+  renderChips(msg.suggestions || []);
+  state.transcript.push({ who:"Fred", text: msg.reply });
+  save();
+  if (msg.end){
+    setTimeout(() => {
+      if (kidTurns >= 3) giveSticker("Tolles Gespräch mit Fred! 🎉");
+      else show("home");
+    }, 2500);
+  }
+}
+
+function addMsg(who, text, de){
+  const m = document.createElement("div");
+  m.className = "msg " + who;
+  let inner = "";
+  if (who === "fred") inner += '<div class="fred-face mini">🦊</div>';
+  inner += '<div class="bubble">' + esc(text);
+  if (who === "fred"){
+    inner += '<span class="de-hint" hidden>' + esc(de || "") + '</span>' +
+             '<div class="tools"><button class="tinybtn act-play">🔊 nochmal</button>' +
+             (de ? '<button class="tinybtn act-de">🇩🇪 Was heißt das?</button>' : "") + '</div>';
+  }
+  inner += "</div>";
+  m.innerHTML = inner;
+  if (who === "fred"){
+    m.querySelector(".act-play").addEventListener("click", () => speak(text));
+    const deBtn = m.querySelector(".act-de");
+    if (deBtn) deBtn.addEventListener("click", () => {
+      m.querySelector(".de-hint").hidden = false;
+      deBtn.remove();
+    });
+  }
+  const box = $("#msgs");
+  box.appendChild(m);
+  box.scrollTop = box.scrollHeight;
+}
+
+function renderChips(suggs){
+  const c = $("#chips");
+  c.innerHTML = "";
+  (suggs || []).slice(0,3).forEach(s => {
+    const b = document.createElement("button");
+    b.className = "chip";
+    b.innerHTML = esc(s.en) + "<small>" + esc(s.de || "") + "</small>";
+    b.addEventListener("click", () => childSays(s.en));
+    c.appendChild(b);
+  });
+}
+
+function childSays(text){
+  if (busy || !text.trim()) return;
+  text = text.trim();
+  addMsg("kid", text);
+  state.transcript.push({ who: state.name, text: text });
+  save();
+  kidTurns++;
+  renderChips([]);
+  $("#chat-input").value = "";
+  if (aiMode){
+    askFredAI(text);
+  } else {
+    step++;
+    const line = chatTopic.chat[step];
+    if (line) setTimeout(() => fredSays(scriptLine(line)), 700);
+    else setTimeout(() => giveSticker("Tolles Gespräch mit Fred! 🎉"), 700);
+  }
+}
+
+$("#send").addEventListener("click", () => childSays($("#chat-input").value));
+$("#chat-input").addEventListener("keydown", ev => {
+  if (ev.key === "Enter") childSays($("#chat-input").value);
+});
+$("#chat-back").addEventListener("click", () => {
+  speechSynthesis && speechSynthesis.cancel();
+  show("home"); renderHome();
+});
+$("#chat-done").addEventListener("click", () => {
+  speechSynthesis && speechSynthesis.cancel();
+  if (kidTurns >= 3) giveSticker("Tolles Gespräch mit Fred! 🎉");
+  else { toast("Rede noch ein bisschen mit Fred, dann gibt es einen Sticker!"); }
+});
+
+/* ---------------- KI-Fred (Claude-API) ---------------- */
+function systemPrompt(){
+  const vocab = chatTopic.words.map(w => w.en).join(", ");
+  return [
+    "You are Fred, a friendly, funny 9-year-old fox from England.",
+    "You are chatting with " + state.name + ", a 9-year-old German child in 3rd grade who is JUST starting to learn English.",
+    "You love Minecraft, animals, karate and building things - just like " + state.name + ".",
+    "",
+    "RULES:",
+    "- Use VERY simple English: short sentences (max 8 words), present tense, beginner words only.",
+    "- Maximum 2 short sentences per reply. Ask one simple question in most replies.",
+    "- Today's topic: " + chatTopic.title + ". Naturally reuse these words: " + vocab + ".",
+    "- React warmly to what " + state.name + " says. Be playful and curious.",
+    "- If " + state.name + " writes German or seems stuck: help with the English word plus a tiny German hint in brackets.",
+    "- Never criticize mistakes. Instead, repeat the sentence correctly inside your friendly reply.",
+    "- Stay strictly kid-safe: no scary, violent or adult topics. Never ask for personal information (address, school, phone). Never suggest meeting in real life. If something inappropriate comes up, cheerfully change the topic.",
+    "- After about 8 exchanges, start saying a warm goodbye.",
+    "",
+    'OUTPUT: Respond ONLY with minified JSON, no markdown, exactly this shape:',
+    '{"reply":"Fred\'s English reply","de":"German translation of the reply","suggestions":[{"en":"simple answer the child could give","de":"German meaning"},{"en":"...","de":"..."},{"en":"...","de":"..."}]}'
+  ].join("\n");
+}
+
+async function askFredAI(childText){
+  busy = true;
+  $("#thinking").hidden = false;
+  if (childText === "START"){
+    history = [{ role:"user", content:"(The chat starts now. Greet " + state.name + " and open the topic '" + chatTopic.title + "' with a simple question.)" }];
+  } else {
+    history.push({ role:"user", content: childText });
+  }
+  if (history.length > 20) history = history.slice(-20);
+
+  const body = {
+    model: state.model,
+    max_tokens: 600,
+    system: [{ type:"text", text: systemPrompt(), cache_control:{ type:"ephemeral" } }],
+    messages: history
+  };
+  if (state.model.indexOf("claude-opus-5") === 0){
+    body.output_config = { effort: "low" };   /* schnelle, günstige Antworten im Kinder-Chat */
+  }
+
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": state.apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify(body)
+    });
+    if (res.status === 401){ throw { kind:"auth" }; }
+    if (res.status === 400){
+      const err = await res.json().catch(() => ({}));
+      throw { kind:"bad", detail: err && err.error && err.error.message };
+    }
+    if (!res.ok){ throw { kind:"http", status: res.status }; }
+    const data = await res.json();
+
+    if (data.stop_reason === "refusal"){
+      fredSays({ reply:"Hmm, let's talk about something else! Do you like animals?",
+                 de:"Hmm, lass uns über etwas anderes reden! Magst du Tiere?",
+                 suggestions:[{en:"Yes!",de:"Ja!"},{en:"I like dogs.",de:"Ich mag Hunde."},{en:"OK!",de:"Okay!"}] });
+      history.push({ role:"assistant", content:"Let's talk about something else! Do you like animals?" });
+      return;
+    }
+    const textBlock = (data.content || []).find(b => b.type === "text");
+    const raw = textBlock ? textBlock.text : "";
+    const msg = parseFred(raw);
+    history.push({ role:"assistant", content: raw });
+    if (kidTurns >= 9) msg.end = true;
+    fredSays(msg);
+  } catch(e){
+    if (e && e.kind === "auth"){
+      toast("Der API-Schlüssel scheint nicht zu stimmen (Elternbereich prüfen).", 4000);
+    } else if (e && e.kind === "bad"){
+      toast("Die KI-Anfrage wurde abgelehnt: " + (e.detail || "unbekannter Grund"), 4000);
+    } else {
+      toast("Fred kommt gerade nicht ins Internet. In dieser Vorschau-Umgebung ist der KI-Modus evtl. gesperrt - der Übungsmodus geht immer!", 5000);
+    }
+    /* Sanfter Rückfall in den Übungsmodus, damit das Gespräch weitergeht */
+    aiMode = false; step = 0;
+    fredSays(scriptLine(chatTopic.chat[0]));
+  } finally {
+    busy = false;
+    $("#thinking").hidden = true;
+  }
+}
+
+function parseFred(raw){
+  try {
+    const cleaned = raw.replace(/^```(json)?/m, "").replace(/```$/m, "").trim();
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    const obj = JSON.parse(cleaned.slice(start, end + 1));
+    if (obj && obj.reply) return {
+      reply: String(obj.reply),
+      de: String(obj.de || ""),
+      suggestions: Array.isArray(obj.suggestions) ? obj.suggestions.slice(0,3) : []
+    };
+  } catch(err){ /* Fred hat kein sauberes JSON geliefert -> Text direkt anzeigen */ }
+  return { reply: raw.slice(0, 200) || "Sorry, can you say that again?", de:"", suggestions:[] };
+}
+
+/* ---------------- Elternbereich ---------------- */
+function renderParents(){
+  $("#set-name").value = state.name;
+  $("#set-key").value = state.apiKey;
+  $("#set-model").value = state.model;
+  $("#learned-count").textContent = state.learned.length;
+  const lp = $("#learned-list");
+  lp.innerHTML = state.learned.length ? "" : '<span style="background:none;color:var(--ink-soft)">Noch keine.</span>';
+  state.learned.forEach(w => {
+    const s = document.createElement("span"); s.textContent = w; lp.appendChild(s);
+  });
+  const tr = $("#transcript");
+  if (state.transcript.length){
+    tr.innerHTML = state.transcript.slice(-40).map(m =>
+      "<p><b>" + esc(m.who) + ":</b> " + esc(m.text) + "</p>").join("");
+  }
+}
+$("#set-name").addEventListener("change", ev => { state.name = ev.target.value.trim() || "Jonah"; save(); renderHome(); });
+$("#set-key").addEventListener("change", ev => {
+  state.apiKey = ev.target.value.trim(); save();
+  toast(state.apiKey ? "KI-Modus aktiviert! 🎉" : "Übungsmodus aktiv (kein Schlüssel).");
+});
+$("#set-model").addEventListener("change", ev => { state.model = ev.target.value; save(); });
+$("#btn-reset").addEventListener("click", () => {
+  if (confirm("Wirklich ALLE Daten (Sticker, Fortschritt, Einstellungen) löschen?")){
+    state = Object.assign({}, DEFAULTS); save(); renderHome(); toast("Alles zurückgesetzt.");
+  }
+});
+
+/* ---------------- Konfetti ---------------- */
+function confetti(){
+  const cv = $("#confetti");
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  cv.hidden = false;
+  cv.width = innerWidth; cv.height = innerHeight;
+  const ctx = cv.getContext("2d");
+  const cols = ["#F08A24","#FFD65A","#3FA96F","#E2618B","#5C7A9E"];
+  const parts = Array.from({length:80}, () => ({
+    x: Math.random()*cv.width, y: -20 - Math.random()*cv.height*0.5,
+    r: 4 + Math.random()*5, c: cols[Math.floor(Math.random()*cols.length)],
+    vy: 2 + Math.random()*3, vx: -1.5 + Math.random()*3, a: Math.random()*Math.PI
+  }));
+  let frames = 0;
+  (function tick(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    parts.forEach(p => {
+      p.y += p.vy; p.x += p.vx; p.a += 0.1;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.a);
+      ctx.fillStyle = p.c; ctx.fillRect(-p.r,-p.r/2,p.r*2,p.r);
+      ctx.restore();
+    });
+    if (++frames < 140) requestAnimationFrame(tick);
+    else { ctx.clearRect(0,0,cv.width,cv.height); cv.hidden = true; }
+  })();
+}
+
+/* ---------------- Start ---------------- */
+renderHome();
+</script>
+</body>
+</html>

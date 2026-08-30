@@ -437,17 +437,19 @@
       <select id="set-voice"></select>
       <label for="set-pitch" style="margin-top:12px">Stimmlage</label>
       <select id="set-pitch">
-        <option value="0.8">Tiefer (männlicher)</option>
+        <option value="0.7">Tiefer (männlicher)</option>
         <option value="1.0">Normal</option>
-        <option value="1.2">Höher</option>
+        <option value="1.3">Höher</option>
       </select>
       <div class="btnrow">
         <button class="btn small sun" id="btn-voicetest">🔊 Probehören</button>
       </div>
+      <div class="note" id="voice-active">–</div>
       <div class="note">
         Welche Stimmen es gibt, bestimmt das Gerät. Die App wählt automatisch eine
-        männliche englische Stimme, wenn eine da ist. Gibt es nur eine Stimme
-        (häufig auf Android-Tablets), hilft die Stimmlage „Tiefer".
+        männliche englische Stimme, wenn eine da ist. Hinweis: Ein paar
+        „Google“-Stimmen ignorieren die Stimmlage - dann lieber eine andere
+        Stimme aus der Liste probieren.
       </div>
     </div>
 
@@ -500,7 +502,7 @@
    Fred der Englisch-Fuchs
    Ein Lern-Kumpel für Kinder in der 3. Klasse (erste englische Wörter).
    ===================================================================== */
-const APP_VERSION = "1.5";
+const APP_VERSION = "1.6";
 
 /* ---------------- Daten: Themen & Wortschatz-Kisten ---------------- */
 const TOPICS = [
@@ -816,9 +818,14 @@ function pickVoice(){
     (/google/i.test(v.name) ? 1 : 0);
   voice = vs.slice().sort((a,b) => score(b) - score(a))[0];
 }
+function refreshVoiceUI(){
+  /* Stimmen laden oft verspätet - Liste und Anzeige dann auffrischen */
+  pickVoice();
+  if ($("#scr-parents").classList.contains("on")) renderParents();
+}
 if (window.speechSynthesis){
   pickVoice();
-  speechSynthesis.onvoiceschanged = pickVoice;
+  speechSynthesis.onvoiceschanged = refreshVoiceUI;
 }
 let ttsWarned = false;
 function speak(text){
@@ -830,8 +837,13 @@ function speak(text){
     speechSynthesis.cancel();
     if (!voice) pickVoice();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = "en-GB"; u.rate = 0.85; u.pitch = state.pitch || 1.0;
-    if (voice) u.voice = voice;
+    /* Wichtig: die Sprache MUSS zur gewählten Stimme passen - sonst
+       ignorieren viele Geräte die Stimmen-Auswahl komplett und nehmen
+       einfach ihre Standardstimme. */
+    if (voice){ u.voice = voice; u.lang = voice.lang; }
+    else u.lang = "en-GB";
+    u.rate = 0.85;
+    u.pitch = state.pitch || 1.0;
     u.onstart = () => { ttsWarned = true; };  /* Ton kam an - nie mehr warnen */
     u.onerror = () => {
       if (!ttsWarned){
@@ -1563,7 +1575,12 @@ function renderParents(){
     });
   }
   sel.value = state.voiceName || "";
-  $("#set-pitch").value = String(state.pitch || 1.0);
+  const p = state.pitch || 1.0;
+  $("#set-pitch").value = p < 0.9 ? "0.7" : p > 1.1 ? "1.3" : "1.0";
+  pickVoice();
+  $("#voice-active").innerHTML = voice
+    ? "Gerade aktiv: <b>" + esc(voice.name) + "</b> (" + esc(voice.lang) + ")"
+    : "Noch keine englische Stimme gefunden - sobald das Gerät eine lädt, erscheint sie hier.";
   $("#ver-label").textContent = APP_VERSION;
   $("#learned-count").textContent = state.learned.length;
   const lp = $("#learned-list");
@@ -1586,6 +1603,9 @@ $("#set-model").addEventListener("change", ev => { state.model = ev.target.value
 $("#set-voice").addEventListener("change", ev => {
   state.voiceName = ev.target.value; save();
   voice = null; pickVoice();
+  $("#voice-active").innerHTML = voice
+    ? "Gerade aktiv: <b>" + esc(voice.name) + "</b> (" + esc(voice.lang) + ")"
+    : "Noch keine englische Stimme gefunden.";
   speak("Hello! I am Fred!");
 });
 $("#set-pitch").addEventListener("change", ev => {

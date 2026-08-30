@@ -1,5 +1,21 @@
 # 🦊 Fred der Englisch-Fuchs
 
+## 🆕 Was zuletzt neu kam
+
+- **Version 1.6:** Die Stimmen-Auswahl funktioniert jetzt wirklich! Vorher hat
+  die App heimlich immer „Britisch" verlangt – da haben viele Geräte einfach
+  ihre Standardstimme genommen, egal was man wählte. Jetzt zählt deine Wahl,
+  „Tiefer" klingt deutlich tiefer, und im Elternbereich steht, welche Stimme
+  gerade wirklich spricht.
+- **Version 1.5:** Deine Sticker wohnen jetzt in einem richtigen Heft mit
+  Deckblatt und Seiten zum Umblättern – einfach wischen! 👉
+- **Version 1.4:** Quiz spielen mit 3 Fragearten! Dazu 4 neue Themen (Karate,
+  Werkstatt, Essen, Farben & Zahlen), Fred kennt jetzt dein JonahCraft-Spiel
+  (Hunde zähmen, Autos, Geheimfestung!), Fred kann eine Jungen-Stimme haben,
+  und im Chat siehst du, ob der echte KI-Fred da ist (🤖) oder der Übungs-Fred (📖).
+- **Version 1.3:** Der „Wie sagt man …?"-Helfer im Chat: Sag ein Wort auf
+  Deutsch und Fred verrät dir das Englische.
+
 Eine kleine Englisch-Lern-App für Jonah (9 Jahre, 3. Klasse). Fred ist ein
 frecher Fuchs aus England, der sich wie ein Brieffreund mit Jonah unterhält –
 über Tiere, Minecraft und den Alltag. Gelernt wird wenig, aber das Richtige:

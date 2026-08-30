@@ -31,6 +31,10 @@
     margin:0;background:var(--paper);color:var(--ink);
     font-family:"Nunito","Trebuchet MS",system-ui,sans-serif;
     font-size:17px;line-height:1.5;min-height:100vh;
+    overscroll-behavior-y:none;
+  }
+  .btn,.chip,.iconbtn,.micbtn,.tinybtn,.wordcard,.fred-face{
+    touch-action:manipulation;user-select:none;-webkit-user-select:none;
   }
   h1,h2,h3,.btn,.chip{font-family:"Baloo 2","Comic Sans MS","Nunito",sans-serif}
   h1{font-size:2rem;font-weight:800;margin:.2em 0;text-wrap:balance}
@@ -199,6 +203,7 @@
       <div class="fred-face" id="fred-hero" role="img" aria-label="Fred der Fuchs">🦊</div>
       <h1 id="home-greet">Hello!</h1>
       <div class="hello">Ich bin Fred aus England. Lass uns Englisch lernen!</div>
+      <div class="hello" id="home-stats" style="margin-top:4px"></div>
     </div>
     <div class="menu">
       <button class="btn sun" data-go="topics-learn"><span class="big">📚</span> Wörter lernen</button>
@@ -228,6 +233,7 @@
       <div class="en" id="wc-en"></div>
       <div class="de" id="wc-de"></div>
       <div class="btnrow" style="justify-content:center">
+        <button class="btn small" id="wc-prev">⟲ Zurück</button>
         <button class="btn sun small" id="wc-play">🔊 Anhören</button>
         <button class="btn green small" id="wc-next">Weiter ➜</button>
       </div>
@@ -462,11 +468,54 @@ function save(){
 
 /* ---------------- kleine Helfer ---------------- */
 const $ = s => document.querySelector(s);
-function show(id){
+
+/* Navigation über die URL-Raute (#home, #lesson, ...): so führt der
+   Zurück-Button (Browser, Android-Geste) sinnvoll durch die App statt sie
+   zu verlassen - und das funktioniert auch bei lokal geöffneten Dateien. */
+let parentsUnlocked = false;
+let mode = "learn";        /* "learn" = Wortschatz-Kiste, "chat" = mit Fred reden */
+let rewardReady = false;   /* Belohnungs-Screen nur direkt nach einem Erfolg */
+let chatPending = false;   /* Chat-Eröffnung wartet auf den Screen-Wechsel */
+
+function nav(token){
+  if (location.hash === "#" + token) route();  /* schon dort? trotzdem auffrischen */
+  else location.hash = token;
+}
+function route(){
+  let token = (location.hash || "#home").replace(/^#/, "") || "home";
+  if (token === "topics-learn"){ mode = "learn"; token = "topics"; }
+  else if (token === "topics-chat"){ mode = "chat"; token = "topics"; }
+  /* Bildschirme, deren Sitzung vorbei ist, führen zurück nach Hause */
+  if (token === "lesson" && (!lesson || li >= lesson.words.length)) return location.replace("#home");
+  if (token === "chat" && !chatTopic) return location.replace("#home");
+  if (token === "reward" && !rewardReady) return location.replace("#home");
+  if (token === "parents" && !parentsUnlocked) return location.replace("#home");
+  if (!document.getElementById("scr-" + token)) return location.replace("#home");
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  prepareScreen(token);
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("on"));
-  $("#scr-" + id).classList.add("on");
+  $("#scr-" + token).classList.add("on");
   window.scrollTo(0,0);
 }
+function prepareScreen(id){
+  if (id === "home") renderHome();
+  else if (id === "album") renderAlbum();
+  else if (id === "topics") buildTopics();
+  else if (id === "parents") renderParents();
+  else if (id === "lesson") renderWord();
+  else if (id === "reward"){
+    rewardReady = false;               /* nur einmal feiern */
+    sfx("win");
+    speak("Well done, " + state.name + "!");
+    confetti();
+  }
+  else if (id === "chat" && chatPending){
+    chatPending = false;
+    if (aiMode) askFredAI("START");
+    else fredSays(scriptLine(chatTopic.chat[0]));
+  }
+}
+window.addEventListener("hashchange", route);
 function toast(txt, ms){
   const t = $("#toast");
   t.textContent = txt; t.classList.add("show");
@@ -519,7 +568,11 @@ if (SR){
   };
   recog.onend = stopMicUI;
 }
-function stopMicUI(){ listening = false; $("#mic").classList.remove("listening"); }
+function stopMicUI(){
+  listening = false;
+  $("#mic").classList.remove("listening");
+  $("#chat-input").placeholder = "…oder hier tippen";
+}
 $("#mic").addEventListener("click", () => {
   if (!recog){ toast("Sprechen geht in diesem Browser leider nicht - tippe stattdessen!"); return; }
   if (listening){ recog.stop(); return; }
@@ -527,6 +580,7 @@ $("#mic").addEventListener("click", () => {
     speechSynthesis && speechSynthesis.cancel();
     recog.start(); listening = true;
     $("#mic").classList.add("listening");
+    $("#chat-input").placeholder = "🎤 Ich höre zu - sprich Englisch!";
   } catch(e){ stopMicUI(); }
 });
 
@@ -534,45 +588,46 @@ $("#mic").addEventListener("click", () => {
 document.querySelectorAll("[data-go]").forEach(b => {
   b.addEventListener("click", () => {
     const go = b.dataset.go;
-    if (go === "topics-learn") openTopics("learn");
-    else if (go === "topics-chat") openTopics("chat");
-    else if (go === "album") { renderAlbum(); show("album"); }
-    else show(go);
-    if (go === "home") renderHome();
+    nav(go);
   });
 });
 $("#btn-parents").addEventListener("click", () => {
   const a = 6, b = 7;
-  const ans = prompt("Elternbereich - kleine Rechenaufgabe: " + a + " × " + b + " = ?");
-  if (ans === null) return;
-  if (parseInt(ans, 10) === a * b){ renderParents(); show("parents"); }
-  else toast("Das war leider falsch. 🙈");
+  if (!parentsUnlocked){
+    const ans = prompt("Elternbereich - kleine Rechenaufgabe: " + a + " × " + b + " = ?");
+    if (ans === null) return;
+    if (parseInt(ans, 10) !== a * b){ toast("Das war leider falsch. 🙈"); return; }
+    parentsUnlocked = true;
+  }
+  nav("parents");
 });
 
 /* ---------------- Home ---------------- */
 function renderHome(){
   $("#home-greet").textContent = "Hello, " + state.name + "!";
   $("#sticker-count").textContent = state.stickers.length ? state.stickers.length + " ⭐" : "";
+  const st = $("#home-stats");
+  st.textContent = state.learned.length
+    ? "🧠 Du kennst schon " + state.learned.length + " englische " +
+      (state.learned.length === 1 ? "Wort" : "Wörter") + "!"
+    : "";
 }
 $("#fred-hero").addEventListener("click", () => speak("Hello " + state.name + "! Let's learn English!"));
 
 /* ---------------- Themen-Auswahl ---------------- */
-let mode = "learn";
-function openTopics(m){
-  mode = m;
-  $("#topics-title").textContent = m === "learn" ? "Was willst du lernen?" : "Worüber reden wir?";
+function buildTopics(){
+  $("#topics-title").textContent = mode === "learn" ? "Was willst du lernen?" : "Worüber reden wir?";
   const list = $("#topiclist");
   list.innerHTML = "";
   TOPICS.forEach(t => {
     const b = document.createElement("button");
     b.className = "btn";
-    const doneKey = m + ":" + t.id;
+    const doneKey = mode + ":" + t.id;
     b.innerHTML = '<span class="big">' + t.emoji + '</span> ' + esc(t.title) +
                   (state.done[doneKey] ? '<span class="topic-done">✅</span>' : "");
-    b.addEventListener("click", () => m === "learn" ? startLesson(t) : startChat(t));
+    b.addEventListener("click", () => mode === "learn" ? startLesson(t) : startChat(t));
     list.appendChild(b);
   });
-  show("topics");
 }
 
 /* ---------------- Wortschatz-Kiste ---------------- */
@@ -580,8 +635,7 @@ let lesson = null, li = 0;
 function startLesson(t){
   lesson = t; li = 0;
   $("#lesson-title").textContent = t.emoji + " " + t.title;
-  renderWord();
-  show("lesson");
+  nav("lesson");
 }
 function renderWord(){
   const w = lesson.words[li];
@@ -599,9 +653,18 @@ function renderWord(){
   speak(en);
 }
 $("#wc-play").addEventListener("click", () => speak($("#wc-en").textContent));
+$("#wordcard").addEventListener("click", ev => {
+  /* Auch das große Bild/Wort antippen liest vor - riesige Zielfläche für Kinderfinger */
+  if (ev.target.closest("button")) return;
+  speak($("#wc-en").textContent);
+});
+$("#wc-prev").addEventListener("click", () => {
+  if (li > 0){ li--; renderWord(); }
+});
 $("#wc-next").addEventListener("click", () => {
   const w = lesson.words[li];
   if (!state.learned.includes(w.en)) state.learned.push(w.en);
+  sfx("pop");
   li++;
   if (li < lesson.words.length){ renderWord(); }
   else {
@@ -631,9 +694,8 @@ function giveSticker(headline){
   const badge = $("#rw-badge");
   badge.textContent = RARITY_DE[s.r];
   badge.className = "badge" + (s.r === "epic" ? " epic" : "");
-  show("reward");
-  speak("Well done, " + state.name + "!");
-  confetti();
+  rewardReady = true;
+  nav("reward");   /* Fanfare, Stimme und Konfetti startet der Screen-Wechsel */
 }
 
 /* ---------------- Album ---------------- */
@@ -664,12 +726,8 @@ function startChat(t){
   aiMode = !!state.apiKey;
   state.transcript = [];
   $("#msgs").innerHTML = "";
-  show("chat");
-  if (aiMode){
-    askFredAI("START");
-  } else {
-    fredSays(scriptLine(t.chat[0]));
-  }
+  chatPending = true;
+  nav("chat");
 }
 function scriptLine(stepObj){
   return {
@@ -688,8 +746,9 @@ function fredSays(msg){
   save();
   if (msg.end){
     setTimeout(() => {
+      if (!$("#scr-chat").classList.contains("on")) return; /* schon woanders */
       if (kidTurns >= 3) giveSticker("Tolles Gespräch mit Fred! 🎉");
-      else show("home");
+      else nav("home");
     }, 2500);
   }
 }
@@ -757,7 +816,7 @@ $("#chat-input").addEventListener("keydown", ev => {
 });
 $("#chat-back").addEventListener("click", () => {
   speechSynthesis && speechSynthesis.cancel();
-  show("home"); renderHome();
+  nav("home");
 });
 $("#chat-done").addEventListener("click", () => {
   speechSynthesis && speechSynthesis.cancel();
@@ -901,6 +960,27 @@ $("#btn-reset").addEventListener("click", () => {
   }
 });
 
+/* ---------------- kleine Klänge (ohne Audiodateien) ---------------- */
+let audioCtx = null;
+function sfx(kind){
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === "suspended") audioCtx.resume();
+    const now = audioCtx.currentTime;
+    const seq = kind === "win"
+      ? [[523,0,.14],[659,.14,.14],[784,.28,.28]]   /* kleine Sieger-Fanfare */
+      : [[740,0,.09]];                               /* leiser "Pop" */
+    seq.forEach(p => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = "sine"; o.frequency.value = p[0];
+      o.connect(g); g.connect(audioCtx.destination);
+      g.gain.setValueAtTime(.12, now + p[1]);
+      g.gain.exponentialRampToValueAtTime(.001, now + p[1] + p[2]);
+      o.start(now + p[1]); o.stop(now + p[1] + p[2]);
+    });
+  } catch(e){ /* Ton ist nur Deko */ }
+}
+
 /* ---------------- Konfetti ---------------- */
 function confetti(){
   const cv = $("#confetti");
@@ -929,7 +1009,7 @@ function confetti(){
 }
 
 /* ---------------- Start ---------------- */
-renderHome();
+route();
 </script>
 </body>
 </html>

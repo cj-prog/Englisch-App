@@ -2,6 +2,11 @@
 
 ## 🆕 Was zuletzt neu kam
 
+- **Version 1.7:** Du hast jetzt eine zweite Freundin: **Lucy, die Wölfin aus
+  Amerika**! 🐺 Beim „Mit Fred & Lucy reden" suchst du dir vorher aus, mit wem
+  du quatschen willst. Lucy liebt Tiere, Fußball und Klettern, spielt auch
+  JonahCraft – und spricht mit einer Mädchenstimme, amerikanisch!
+
 - **Version 1.6:** Die Stimmen-Auswahl funktioniert jetzt wirklich! Vorher hat
   die App heimlich immer „Britisch" verlangt – da haben viele Geräte einfach
   ihre Standardstimme genommen, egal was man wählte. Jetzt zählt deine Wahl,

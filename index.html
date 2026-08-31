@@ -85,6 +85,17 @@
     animation:bob 3.2s ease-in-out infinite;user-select:none;
   }
   .fred-face.mini{width:44px;height:44px;font-size:26px;border-width:3px;animation:none;box-shadow:none;flex:none}
+  .fred-face.lucy{background:radial-gradient(circle at 35% 30%,#D5E2EE,#8AA2B8)}
+  .buddyrow{display:flex;gap:12px;margin-bottom:6px}
+  .buddybtn{
+    flex:1;border:3px solid var(--sky-line);border-radius:var(--radius);border-bottom-width:5px;
+    background:var(--card);padding:12px;text-align:center;cursor:pointer;
+    font-family:"Baloo 2",sans-serif;font-weight:800;font-size:1.05rem;color:var(--ink);
+  }
+  .buddybtn .big{font-size:2rem;display:block}
+  .buddybtn small{display:block;font-family:"Nunito",sans-serif;font-weight:700;color:var(--ink-soft);font-size:.78rem}
+  .buddybtn.sel{border-color:var(--fox);background:var(--bubble-fred)}
+  .buddybtn:active{transform:translateY(2px)}
   @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}
   .hero .hello{color:var(--ink-soft);font-weight:700;margin-top:10px}
 
@@ -273,7 +284,7 @@
     <div class="menu">
       <button class="btn sun" data-go="topics-learn"><span class="big">📚</span> Wörter lernen</button>
       <button class="btn green" data-go="topics-quiz"><span class="big">🎯</span> Quiz spielen</button>
-      <button class="btn primary" data-go="topics-chat"><span class="big">💬</span> Mit Fred reden</button>
+      <button class="btn primary" data-go="topics-chat"><span class="big">💬</span> Mit Fred &amp; Lucy reden</button>
       <button class="btn" data-go="album"><span class="big">⭐</span> Meine Sticker <span id="sticker-count" style="margin-left:auto;color:var(--fox-deep)"></span></button>
     </div>
   </section>
@@ -330,8 +341,8 @@
     <div class="chatwrap">
       <div class="topbar">
         <button class="iconbtn" id="chat-back" aria-label="Zurück">←</button>
-        <div class="fred-face mini">🦊</div>
-        <span class="title">Fred</span>
+        <div class="fred-face mini" id="chat-avatar">🦊</div>
+        <span class="title" id="chat-name">Fred</span>
         <span class="modepill" id="modepill"></span>
         <span class="spacer"></span>
         <button class="btn small sun" id="chat-done">Fertig ✔</button>
@@ -447,7 +458,8 @@
       <div class="note" id="voice-active">–</div>
       <div class="note">
         Welche Stimmen es gibt, bestimmt das Gerät. Die App wählt automatisch eine
-        männliche englische Stimme, wenn eine da ist. Hinweis: Ein paar
+        männliche englische Stimme, wenn eine da ist. Lucy (die Wölfin) sucht
+        sich von selbst eine Mädchenstimme. Hinweis: Ein paar
         „Google“-Stimmen ignorieren die Stimmlage - dann lieber eine andere
         Stimme aus der Liste probieren.
       </div>
@@ -502,7 +514,7 @@
    Fred der Englisch-Fuchs
    Ein Lern-Kumpel für Kinder in der 3. Klasse (erste englische Wörter).
    ===================================================================== */
-const APP_VERSION = "1.6";
+const APP_VERSION = "1.7";
 
 /* ---------------- Daten: Themen & Wortschatz-Kisten ---------------- */
 const TOPICS = [
@@ -690,6 +702,38 @@ const TOPICS = [
   }
 ];
 
+/* ---------------- Die Freunde ---------------- */
+const BUDDIES = {
+  fred: {
+    id:"fred", name:"Fred", emoji:"🦊", who:"der Fuchs aus England",
+    persona:"You are Fred, a friendly, funny 9-year-old fox boy from England. You love Minecraft (JonahCraft), animals, karate and building things",
+    voiceGender:"male", voiceLang:"en-GB"
+  },
+  lucy: {
+    id:"lucy", name:"Lucy", emoji:"🐺", who:"die Wölfin aus Amerika",
+    persona:"You are Lucy, a cheerful, curious 9-year-old wolf girl from America. You love animals, football, climbing trees and you also play JonahCraft",
+    voiceGender:"female", voiceLang:"en-US"
+  }
+};
+let buddy = BUDDIES.fred;
+/* Macht aus Freds festen Übungs-Sätzen automatisch Lucy-Sätze */
+function buddyize(s){
+  if (buddy.id === "fred") return s;
+  return s
+    .replace(/Fred/g, "Lucy")
+    .replace(/a fox from England/g, "a wolf from America")
+    .replace(/ein Fuchs aus England/g, "eine Wölfin aus Amerika")
+    .replace(/I'm a fox/g, "I'm a wolf")
+    .replace(/Ich bin ein Fuchs/g, "Ich bin eine Wölfin")
+    .replace(/Foxes are very clever/g, "Wolves are very clever")
+    .replace(/Füchse sind sehr schlau/g, "Wölfe sind sehr schlau")
+    .replace(/A fox\?!/g, "A wolf?!")
+    .replace(/Ein Fuchs\?!/g, "Eine Wölfin?!")
+    .replace(/orange - like me!/g, "blue - like the sky!")
+    .replace(/Orange - wie ich!/g, "Blau - wie der Himmel!")
+    .replace(/England/g, "America");
+}
+
 /* ---------------- Sticker ---------------- */
 const STICKERS = [
   { id:"barky",   pic:"🐶", nm:"Barky",        de:"der Bellhund",      r:"common" },
@@ -717,9 +761,10 @@ const RARITY_DE = { common:"Normal", rare:"Selten ✨", epic:"SUPER-SELTEN 💥"
 
 /* ---------------- Speicher ---------------- */
 const DEFAULTS = { name:"Jonah", apiKey:"", model:"claude-opus-5",
-                   voiceName:"", pitch:1.0, lastVersion:"",
+                   voiceName:"", pitch:1.0, lastVersion:"", buddy:"fred",
                    learned:[], stickers:[], done:{}, transcript:[] };
 let state = load();
+buddy = BUDDIES[state.buddy] || BUDDIES.fred;
 function load(){
   try {
     const raw = localStorage.getItem("fredapp1");
@@ -818,6 +863,19 @@ function pickVoice(){
     (/google/i.test(v.name) ? 1 : 0);
   voice = vs.slice().sort((a,b) => score(b) - score(a))[0];
 }
+/* Welche Stimme spricht gerade? Fred: die gewählte (oder automatisch eine
+   männliche). Lucy: automatisch eine Mädchenstimme, gern amerikanisch. */
+function voiceForBuddy(){
+  if (buddy.id === "fred"){ if (!voice) pickVoice(); return voice; }
+  const vs = englishVoices();
+  if (!vs.length) return null;
+  const score = v =>
+    (FEMALE_HINT.test(v.name) ? 4 : 0) +
+    (MALE_HINT.test(v.name) ? -4 : 0) +
+    (v.lang === buddy.voiceLang ? 2 : 0) +
+    (/google/i.test(v.name) ? 1 : 0);
+  return vs.slice().sort((a,b) => score(b) - score(a))[0];
+}
 function refreshVoiceUI(){
   /* Stimmen laden oft verspätet - Liste und Anzeige dann auffrischen */
   pickVoice();
@@ -835,15 +893,16 @@ function speak(text){
   }
   try {
     speechSynthesis.cancel();
-    if (!voice) pickVoice();
+    const v = voiceForBuddy();
     const u = new SpeechSynthesisUtterance(text);
     /* Wichtig: die Sprache MUSS zur gewählten Stimme passen - sonst
        ignorieren viele Geräte die Stimmen-Auswahl komplett und nehmen
        einfach ihre Standardstimme. */
-    if (voice){ u.voice = voice; u.lang = voice.lang; }
-    else u.lang = "en-GB";
+    if (v){ u.voice = v; u.lang = v.lang; }
+    else u.lang = buddy.voiceLang;
     u.rate = 0.85;
-    u.pitch = state.pitch || 1.0;
+    /* Fred nutzt die eingestellte Stimmlage, Lucy klingt immer etwas heller */
+    u.pitch = buddy.id === "lucy" ? 1.2 : (state.pitch || 1.0);
     u.onstart = () => { ttsWarned = true; };  /* Ton kam an - nie mehr warnen */
     u.onerror = () => {
       if (!ttsWarned){
@@ -951,6 +1010,25 @@ function buildTopics(){
     mode === "quiz"  ? "Welches Quiz spielst du?" : "Worüber reden wir?";
   const list = $("#topiclist");
   list.innerHTML = "";
+  if (mode === "chat"){
+    /* Erst den Freund aussuchen, dann das Thema */
+    const row = document.createElement("div");
+    row.className = "buddyrow";
+    Object.values(BUDDIES).forEach(b => {
+      const btn = document.createElement("button");
+      btn.className = "buddybtn" + (state.buddy === b.id ? " sel" : "");
+      btn.innerHTML = '<span class="big">' + b.emoji + '</span>' + esc(b.name) +
+                      '<small>' + esc(b.who) + '</small>';
+      btn.addEventListener("click", () => {
+        state.buddy = b.id; save();
+        buddy = b;
+        buildTopics();
+        speak("Hi " + state.name + "! I'm " + b.name + "!");
+      });
+      row.appendChild(btn);
+    });
+    list.appendChild(row);
+  }
   TOPICS.forEach(t => {
     const b = document.createElement("button");
     b.className = "btn";
@@ -1211,11 +1289,16 @@ let chatTopic = null, step = 0, kidTurns = 0, history = [], aiMode = false, busy
 
 function startChat(t){
   chatTopic = t; step = 0; kidTurns = 0; history = [];
+  buddy = BUDDIES[state.buddy] || BUDDIES.fred;
+  $("#chat-avatar").textContent = buddy.emoji;
+  $("#chat-avatar").classList.toggle("lucy", buddy.id === "lucy");
+  $("#chat-name").textContent = buddy.name;
   aiMode = !!state.apiKey;
   setModePill();
   state.transcript = [];
   $("#msgs").innerHTML = "";
   $("#transbox").hidden = true; $("#tin").value = ""; $("#tout").hidden = true;
+  $("#tsend").textContent = "➤ An " + buddy.name + " schicken";
   chatPending = true;
   nav("chat");
 }
@@ -1225,10 +1308,11 @@ function setModePill(){
   else { p.textContent = "📖 Übungsmodus"; p.className = "modepill"; }
 }
 function scriptLine(stepObj){
+  const fix = s => buddyize(String(s).replace(/Jonah/g, state.name));
   return {
-    reply: stepObj.fred.replace(/Jonah/g, state.name),
-    de: stepObj.de.replace(/Jonah/g, state.name),
-    suggestions: stepObj.sugg,
+    reply: fix(stepObj.fred),
+    de: fix(stepObj.de),
+    suggestions: (stepObj.sugg || []).map(x => ({ en: fix(x.en), de: fix(x.de) })),
     end: !!stepObj.end
   };
 }
@@ -1237,12 +1321,12 @@ function fredSays(msg){
   addMsg("fred", msg.reply, msg.de);
   speak(msg.reply);
   renderChips(msg.suggestions || []);
-  state.transcript.push({ who:"Fred", text: msg.reply });
+  state.transcript.push({ who: buddy.name, text: msg.reply });
   save();
   if (msg.end){
     setTimeout(() => {
       if (!$("#scr-chat").classList.contains("on")) return; /* schon woanders */
-      if (kidTurns >= 3) giveSticker("Tolles Gespräch mit Fred! 🎉");
+      if (kidTurns >= 3) giveSticker("Tolles Gespräch mit " + buddy.name + "! 🎉");
       else nav("home");
     }, 2500);
   }
@@ -1252,7 +1336,7 @@ function addMsg(who, text, de){
   const m = document.createElement("div");
   m.className = "msg " + who;
   let inner = "";
-  if (who === "fred") inner += '<div class="fred-face mini">🦊</div>';
+  if (who === "fred") inner += '<div class="fred-face mini' + (buddy.id === "lucy" ? " lucy" : "") + '">' + buddy.emoji + '</div>';
   inner += '<div class="bubble">' + esc(text);
   if (who === "fred"){
     inner += '<span class="de-hint" hidden>' + esc(de || "") + '</span>' +
@@ -1301,7 +1385,7 @@ function childSays(text){
     step++;
     const line = chatTopic.chat[step];
     if (line) setTimeout(() => fredSays(scriptLine(line)), 700);
-    else setTimeout(() => giveSticker("Tolles Gespräch mit Fred! 🎉"), 700);
+    else setTimeout(() => giveSticker("Tolles Gespräch mit " + buddy.name + "! 🎉"), 700);
   }
 }
 
@@ -1315,8 +1399,8 @@ $("#chat-back").addEventListener("click", () => {
 });
 $("#chat-done").addEventListener("click", () => {
   speechSynthesis && speechSynthesis.cancel();
-  if (kidTurns >= 3) giveSticker("Tolles Gespräch mit Fred! 🎉");
-  else { toast("Rede noch ein bisschen mit Fred, dann gibt es einen Sticker!"); }
+  if (kidTurns >= 3) giveSticker("Tolles Gespräch mit " + buddy.name + "! 🎉");
+  else { toast("Rede noch ein bisschen mit " + buddy.name + ", dann gibt es einen Sticker!"); }
 });
 
 /* ---------------- KI-Fred (Claude-API) ---------------- */
@@ -1338,9 +1422,8 @@ function systemPrompt(){
     "Talk about THESE things when chatting about the game - it makes " + state.name + " feel you really know his game."
   ] : [];
   return [
-    "You are Fred, a friendly, funny 9-year-old fox from England.",
+    buddy.persona + " - many things just like " + state.name + "!",
     "You are chatting with " + state.name + ", a 9-year-old German child in 3rd grade who is JUST starting to learn English.",
-    "You love Minecraft, animals, karate and building things - just like " + state.name + ".",
     "",
     "RULES:",
     "- Use VERY simple English: short sentences (max 8 words), present tense, beginner words only.",
@@ -1354,7 +1437,7 @@ function systemPrompt(){
   ].concat(jonahcraft).concat([
     "",
     'OUTPUT: Respond ONLY with minified JSON, no markdown, exactly this shape:',
-    '{"reply":"Fred\'s English reply","de":"German translation of the reply","suggestions":[{"en":"simple answer the child could give","de":"German meaning"},{"en":"...","de":"..."},{"en":"...","de":"..."}]}'
+    '{"reply":"' + buddy.name + '\'s English reply","de":"German translation of the reply","suggestions":[{"en":"simple answer the child could give","de":"German meaning"},{"en":"...","de":"..."},{"en":"...","de":"..."}]}'
   ]).join("\n");
 }
 
@@ -1602,6 +1685,7 @@ $("#set-key").addEventListener("change", ev => {
 $("#set-model").addEventListener("change", ev => { state.model = ev.target.value; save(); });
 $("#set-voice").addEventListener("change", ev => {
   state.voiceName = ev.target.value; save();
+  buddy = BUDDIES.fred;   /* die Auswahl hier gilt Freds Stimme */
   voice = null; pickVoice();
   $("#voice-active").innerHTML = voice
     ? "Gerade aktiv: <b>" + esc(voice.name) + "</b> (" + esc(voice.lang) + ")"
@@ -1612,7 +1696,10 @@ $("#set-pitch").addEventListener("change", ev => {
   state.pitch = parseFloat(ev.target.value) || 1.0; save();
   speak("Hello! I am Fred!");
 });
-$("#btn-voicetest").addEventListener("click", () => speak("Hello " + state.name + "! I am Fred the fox!"));
+$("#btn-voicetest").addEventListener("click", () => {
+  buddy = BUDDIES.fred;   /* der Test hier gilt immer Freds Stimme */
+  speak("Hello " + state.name + "! I am Fred the fox!");
+});
 $("#btn-keytest").addEventListener("click", async () => {
   state.apiKey = $("#set-key").value.trim(); save();
   const st = $("#keystatus");

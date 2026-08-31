@@ -105,6 +105,12 @@
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
   .chatrow .go{color:var(--ink-soft);font-size:1.3rem;flex:none}
+  .chatrow.unread{border-bottom-color:var(--leaf)}
+  .chatrow.unread .prev{color:var(--leaf-deep)}
+  .newpill{
+    background:var(--leaf);color:#fff;border-radius:10px;padding:1px 8px;
+    font-family:"Nunito",sans-serif;font-weight:800;font-size:.7rem;vertical-align:middle;
+  }
 
   .buddyrow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:6px}
   @media (max-width:420px){.buddyrow{grid-template-columns:repeat(2,1fr)}}
@@ -309,7 +315,7 @@
     <div class="menu">
       <button class="btn sun" data-go="topics-learn"><span class="big">📚</span> Wörter lernen</button>
       <button class="btn green" data-go="topics-quiz"><span class="big">🎯</span> Quiz spielen</button>
-      <button class="btn primary" data-go="chats"><span class="big">💬</span> Mit deinen Freunden reden</button>
+      <button class="btn primary" data-go="chats"><span class="big">💬</span> Mit deinen Freunden reden <span class="modepill on" id="msg-badge" hidden style="margin-left:auto"></span></button>
       <button class="btn" data-go="album"><span class="big">⭐</span> Meine Sticker <span id="sticker-count" style="margin-left:auto;color:var(--fox-deep)"></span></button>
     </div>
   </section>
@@ -548,7 +554,7 @@
    Fred der Englisch-Fuchs
    Ein Lern-Kumpel für Kinder in der 3. Klasse (erste englische Wörter).
    ===================================================================== */
-const APP_VERSION = "2.0";
+const APP_VERSION = "2.1";
 
 /* ---------------- Daten: Themen & Wortschatz-Kisten ---------------- */
 const TOPICS = [
@@ -863,7 +869,8 @@ const RARITY_DE = { common:"Normal", rare:"Selten ✨", epic:"SUPER-SELTEN 💥"
 /* ---------------- Speicher ---------------- */
 const DEFAULTS = { name:"Jonah", apiKey:"", model:"claude-opus-5",
                    voiceName:"", pitch:1.0, lastVersion:"", buddy:"fred",
-                   learned:[], stickers:[], done:{}, transcript:[], chats:{} };
+                   learned:[], stickers:[], done:{}, transcript:[], chats:{},
+                   unread:{}, lastMsgGen:0 };
 let state = load();
 buddy = BUDDIES[state.buddy] || BUDDIES.fred;
 function load(){
@@ -1103,6 +1110,10 @@ function renderHome(){
     ? "🧠 Du kennst schon " + state.learned.length + " englische " +
       (state.learned.length === 1 ? "Wort" : "Wörter") + "!"
     : "";
+  const badge = $("#msg-badge");
+  const n = unreadCount();
+  badge.hidden = !n;
+  badge.textContent = "📩 " + n;
 }
 $("#fred-hero").addEventListener("click", () => speak("Hello " + state.name + "! Let's learn English!"));
 
@@ -1134,17 +1145,68 @@ function renderChats(){
     const preview = last
       ? (last.w === "k" ? "Du: " : "") + last.t
       : b.who + " – sag mal Hallo!";
+    const isNew = !!(state.unread || {})[b.id];
     const row = document.createElement("button");
-    row.className = "chatrow";
+    row.className = "chatrow" + (isNew ? " unread" : "");
     row.innerHTML =
       '<span class="ava" style="background:' + b.grad + '">' + b.emoji + '</span>' +
-      '<span class="txt"><span class="nm">' + esc(b.name) + '</span>' +
+      '<span class="txt"><span class="nm">' + esc(b.name) +
+      (isNew ? ' <span class="newpill">NEU 💬</span>' : "") + '</span>' +
       '<span class="prev">' + esc(preview) + '</span></span>' +
-      '<span class="go">›</span>';
+      '<span class="go">' + (isNew ? "🟢" : "›") + '</span>';
     row.addEventListener("click", () => openBuddyChat(b));
     list.appendChild(row);
   });
 }
+/* ---- Freunde schreiben von selbst ---- */
+function receiveFrom(b){
+  if (!state.unread) state.unread = {};
+  if (state.unread[b.id]) return false;                     /* wartet schon eine Nachricht */
+  if (Object.keys(state.unread).length >= 3) return false;  /* nicht zuspammen */
+  const t = TOPICS[Math.floor(Math.random() * TOPICS.length)];
+  const old = buddy;
+  buddy = b;
+  const line = scriptLine(t.chat[0]);   /* der Freund eröffnet ein Thema */
+  buddy = old;
+  if (!state.chats) state.chats = {};
+  if (!state.chats[b.id]) state.chats[b.id] = [];
+  state.chats[b.id].push({ w:"f", t: line.reply, d: line.de });
+  if (state.chats[b.id].length > 30) state.chats[b.id] = state.chats[b.id].slice(-30);
+  state.unread[b.id] = { topic: t.id };
+  save();
+  return true;
+}
+function unreadCount(){ return Object.keys(state.unread || {}).length; }
+function maybeOfflineMessages(){
+  /* Wer länger nicht da war, hat Post: 1-2 Freunde haben geschrieben */
+  const now = Date.now();
+  if (!state.lastMsgGen){ state.lastMsgGen = now; save(); return; }
+  if (now - state.lastMsgGen < 3 * 3600 * 1000) return;
+  state.lastMsgGen = now;
+  const pool = Object.values(BUDDIES).filter(b => !(state.unread || {})[b.id]);
+  const n = Math.min(pool.length, 1 + (Math.random() < 0.5 ? 1 : 0));
+  let got = 0;
+  for (let i = 0; i < n; i++){
+    const b = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+    if (b && receiveFrom(b)) got++;
+  }
+  save();
+  if (got) setTimeout(() => { toast("📩 Du hast neue Nachrichten von deinen Freunden!", 4000); sfx("pop"); }, 800);
+}
+/* Auch während des Spielens meldet sich ab und zu ein Freund */
+setInterval(() => {
+  if (document.hidden || Math.random() > 0.3) return;
+  if ($("#scr-chat").classList.contains("on")) return;   /* nicht mitten ins Gespräch */
+  const pool = Object.values(BUDDIES).filter(b => !(state.unread || {})[b.id]);
+  const b = pool[Math.floor(Math.random() * pool.length)];
+  if (b && receiveFrom(b)){
+    toast(b.emoji + " " + b.name + " hat dir geschrieben! 💬", 4000);
+    sfx("pop");
+    if ($("#scr-chats").classList.contains("on")) renderChats();
+    if ($("#scr-home").classList.contains("on")) renderHome();
+  }
+}, 5 * 60 * 1000);
+
 function chatLog(){
   if (!state.chats) state.chats = {};
   if (!state.chats[buddy.id]) state.chats[buddy.id] = [];
@@ -1419,6 +1481,23 @@ function openBuddyChat(b){
   $("#tsend").textContent = "➤ An " + buddy.name + " schicken";
   /* Alte Nachrichten wie in einem echten Messenger wieder anzeigen */
   chatLog().forEach(m => addMsg(m.w === "k" ? "kid" : "fred", m.t, m.d || ""));
+  /* Hat der Freund von selbst geschrieben? Dann geht es direkt dort weiter */
+  const pending = (state.unread || {})[b.id];
+  if (pending){
+    const t = TOPICS.find(x => x.id === pending.topic) || TOPICS[0];
+    chatTopic = t; step = 0;
+    const line = scriptLine(t.chat[0]);
+    speak(line.reply);
+    renderChips(line.suggestions);
+    history = [
+      { role:"user", content:"(Context: you just sent " + state.name + " this message: \"" + line.reply + "\". Continue the chat when " + state.name + " replies.)" },
+      { role:"assistant", content: line.reply }
+    ];
+    delete state.unread[b.id]; save();
+    chatPending = false;
+    nav("chat");
+    return;
+  }
   chatPending = true;
   nav("chat");
 }
@@ -1990,6 +2069,7 @@ window.addEventListener("storage", ev => {
     if ($("#scr-home").classList.contains("on")) renderHome();
   }
 });
+maybeOfflineMessages();   /* Freunde haben vielleicht geschrieben, während er weg war */
 /* Neue App-Version? Zwischenstand automatisch als Datei sichern. */
 if (state.lastVersion !== APP_VERSION){
   const hasProgress = state.stickers.length || state.learned.length;

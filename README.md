@@ -2,6 +2,12 @@
 
 ## 🆕 Was zuletzt neu kam
 
+- **Version 2.1:** Deine Freunde **schreiben dir jetzt von selbst**! 📩 Wenn du
+  eine Weile weg warst, warten neue Nachrichten auf dich (grüner Punkt und
+  „NEU" in der Liste, 📩-Zähler auf der Startseite) – und auch beim Spielen
+  meldet sich ab und zu einer. Antippen, und ihr redet einfach da weiter!
+  (Das Tablet klingelt nur, wenn die App offen ist – zaubern kann sie nicht. 😉)
+
 - **Version 2.0:** Die Themen im Chat stehen jetzt **groß untereinander** –
   wie eine richtige Liste zum Antippen, bei jedem Freund gleich. Oben siehst
   du immer das Bild von deinem Freund.

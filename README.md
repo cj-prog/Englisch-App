@@ -2,6 +2,12 @@
 
 ## 🆕 Was zuletzt neu kam
 
+- **Version 1.8:** Jetzt hast du eine ganze **Freundes-Bande**! 🎉 Neben Fred
+  und Lucy warten: Koko der Koala 🐨, Pip das Pinguin-Mädchen 🐧, Rex der
+  Dino 🦖 (mit Brummstimme!), Milo der Affe 🐵, Stella das Einhorn 🦄 und
+  Sparky der Roboter 🤖. Jeder wohnt woanders, mag andere Sachen und klingt
+  anders – such dir vor jedem Gespräch aus, mit wem du reden willst!
+
 - **Version 1.7:** Du hast jetzt eine zweite Freundin: **Lucy, die Wölfin aus
   Amerika**! 🐺 Beim „Mit Fred & Lucy reden" suchst du dir vorher aus, mit wem
   du quatschen willst. Lucy liebt Tiere, Fußball und Klettern, spielt auch

@@ -86,14 +86,15 @@
   }
   .fred-face.mini{width:44px;height:44px;font-size:26px;border-width:3px;animation:none;box-shadow:none;flex:none}
   .fred-face.lucy{background:radial-gradient(circle at 35% 30%,#D5E2EE,#8AA2B8)}
-  .buddyrow{display:flex;gap:12px;margin-bottom:6px}
+  .buddyrow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:6px}
+  @media (max-width:420px){.buddyrow{grid-template-columns:repeat(2,1fr)}}
   .buddybtn{
-    flex:1;border:3px solid var(--sky-line);border-radius:var(--radius);border-bottom-width:5px;
-    background:var(--card);padding:12px;text-align:center;cursor:pointer;
-    font-family:"Baloo 2",sans-serif;font-weight:800;font-size:1.05rem;color:var(--ink);
+    border:3px solid var(--sky-line);border-radius:18px;border-bottom-width:5px;
+    background:var(--card);padding:10px 6px;text-align:center;cursor:pointer;
+    font-family:"Baloo 2",sans-serif;font-weight:800;font-size:1rem;color:var(--ink);
   }
-  .buddybtn .big{font-size:2rem;display:block}
-  .buddybtn small{display:block;font-family:"Nunito",sans-serif;font-weight:700;color:var(--ink-soft);font-size:.78rem}
+  .buddybtn .big{font-size:1.8rem;display:block}
+  .buddybtn small{display:block;font-family:"Nunito",sans-serif;font-weight:700;color:var(--ink-soft);font-size:.68rem;line-height:1.25}
   .buddybtn.sel{border-color:var(--fox);background:var(--bubble-fred)}
   .buddybtn:active{transform:translateY(2px)}
   @keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(2deg)}}
@@ -284,7 +285,7 @@
     <div class="menu">
       <button class="btn sun" data-go="topics-learn"><span class="big">📚</span> Wörter lernen</button>
       <button class="btn green" data-go="topics-quiz"><span class="big">🎯</span> Quiz spielen</button>
-      <button class="btn primary" data-go="topics-chat"><span class="big">💬</span> Mit Fred &amp; Lucy reden</button>
+      <button class="btn primary" data-go="topics-chat"><span class="big">💬</span> Mit deinen Freunden reden</button>
       <button class="btn" data-go="album"><span class="big">⭐</span> Meine Sticker <span id="sticker-count" style="margin-left:auto;color:var(--fox-deep)"></span></button>
     </div>
   </section>
@@ -458,8 +459,8 @@
       <div class="note" id="voice-active">–</div>
       <div class="note">
         Welche Stimmen es gibt, bestimmt das Gerät. Die App wählt automatisch eine
-        männliche englische Stimme, wenn eine da ist. Lucy (die Wölfin) sucht
-        sich von selbst eine Mädchenstimme. Hinweis: Ein paar
+        männliche englische Stimme, wenn eine da ist. Die anderen Freunde
+        suchen sich ihre Stimme und Tonlage von selbst. Hinweis: Ein paar
         „Google“-Stimmen ignorieren die Stimmlage - dann lieber eine andere
         Stimme aus der Liste probieren.
       </div>
@@ -514,7 +515,7 @@
    Fred der Englisch-Fuchs
    Ein Lern-Kumpel für Kinder in der 3. Klasse (erste englische Wörter).
    ===================================================================== */
-const APP_VERSION = "1.7";
+const APP_VERSION = "1.8";
 
 /* ---------------- Daten: Themen & Wortschatz-Kisten ---------------- */
 const TOPICS = [
@@ -702,36 +703,103 @@ const TOPICS = [
   }
 ];
 
-/* ---------------- Die Freunde ---------------- */
+/* ---------------- Die Freunde ----------------
+   Jeder Freund hat: Aussehen, Zuhause, Persönlichkeit (für den KI-Modus),
+   Stimm-Wunsch (Junge/Mädchen + Land) und eine eigene Tonlage - so klingen
+   alle verschieden, selbst wenn das Gerät nur wenige Stimmen hat. */
 const BUDDIES = {
   fred: {
     id:"fred", name:"Fred", emoji:"🦊", who:"der Fuchs aus England",
     persona:"You are Fred, a friendly, funny 9-year-old fox boy from England. You love Minecraft (JonahCraft), animals, karate and building things",
-    voiceGender:"male", voiceLang:"en-GB"
+    voiceGender:"male", voiceLang:"en-GB", pitch:1.0,
+    grad:"radial-gradient(circle at 35% 30%,#FFC98A,#F08A24)",
+    aEN:"a fox", introEN:"a fox from England", introDE:"ein Fuchs aus England",
+    speciesDE:"ein Fuchs", exclDE:"Ein Fuchs?!", pluralEN:"Foxes", pluralDE:"Füchse",
+    colorEN:"orange", colorDE:"Orange", homeEN:"England"
   },
   lucy: {
     id:"lucy", name:"Lucy", emoji:"🐺", who:"die Wölfin aus Amerika",
     persona:"You are Lucy, a cheerful, curious 9-year-old wolf girl from America. You love animals, football, climbing trees and you also play JonahCraft",
-    voiceGender:"female", voiceLang:"en-US"
+    voiceGender:"female", voiceLang:"en-US", pitch:1.2,
+    grad:"radial-gradient(circle at 35% 30%,#D5E2EE,#8AA2B8)",
+    aEN:"a wolf", introEN:"a wolf from America", introDE:"eine Wölfin aus Amerika",
+    speciesDE:"eine Wölfin", exclDE:"Eine Wölfin?!", pluralEN:"Wolves", pluralDE:"Wölfe",
+    colorEN:"grey", colorDE:"Grau", homeEN:"America"
+  },
+  koko: {
+    id:"koko", name:"Koko", emoji:"🐨", who:"der Koala aus Australien",
+    persona:"You are Koko, a relaxed, funny 9-year-old koala boy from Australia. You love climbing trees, napping, snacks and animals, and you also play JonahCraft",
+    voiceGender:"male", voiceLang:"en-AU", pitch:1.1,
+    grad:"radial-gradient(circle at 35% 30%,#E0D8CE,#9C8F7F)",
+    aEN:"a koala", introEN:"a koala from Australia", introDE:"ein Koala aus Australien",
+    speciesDE:"ein Koala", exclDE:"Ein Koala?!", pluralEN:"Koalas", pluralDE:"Koalas",
+    colorEN:"grey", colorDE:"Grau", homeEN:"Australia"
+  },
+  pip: {
+    id:"pip", name:"Pip", emoji:"🐧", who:"das Pinguin-Mädchen vom Südpol",
+    persona:"You are Pip, a giggly 9-year-old penguin girl from the South Pole. You love swimming, sliding on ice, fish and snowmen, and you also play JonahCraft",
+    voiceGender:"female", voiceLang:"en-GB", pitch:1.35,
+    grad:"radial-gradient(circle at 35% 30%,#D8E8F5,#5C7A9E)",
+    aEN:"a penguin", introEN:"a penguin from the South Pole", introDE:"ein Pinguin vom Südpol",
+    speciesDE:"ein Pinguin", exclDE:"Ein Pinguin?!", pluralEN:"Penguins", pluralDE:"Pinguine",
+    colorEN:"black and white", colorDE:"Schwarz-Weiß", homeEN:"the South Pole"
+  },
+  rex: {
+    id:"rex", name:"Rex", emoji:"🦖", who:"der Dino von der Dino-Insel",
+    persona:"You are Rex, a mighty but very kind 9-year-old dino boy from Dino Island. You love stomping, roaring (RAWR!), big numbers and animals, and you also play JonahCraft",
+    voiceGender:"male", voiceLang:"en-US", pitch:0.75,
+    grad:"radial-gradient(circle at 35% 30%,#CDEBD3,#3FA96F)",
+    aEN:"a dino", introEN:"a dino from Dino Island", introDE:"ein Dino von der Dino-Insel",
+    speciesDE:"ein Dino", exclDE:"Ein Dino?!", pluralEN:"Dinos", pluralDE:"Dinos",
+    colorEN:"green", colorDE:"Grün", homeEN:"Dino Island"
+  },
+  milo: {
+    id:"milo", name:"Milo", emoji:"🐵", who:"der Affe aus dem Dschungel",
+    persona:"You are Milo, a silly, joke-loving 9-year-old monkey boy from the jungle. You love bananas, climbing, funny sounds and animals, and you also play JonahCraft",
+    voiceGender:"male", voiceLang:"en-US", pitch:1.25,
+    grad:"radial-gradient(circle at 35% 30%,#EAD9C0,#B98A4C)",
+    aEN:"a monkey", introEN:"a monkey from the jungle", introDE:"ein Affe aus dem Dschungel",
+    speciesDE:"ein Affe", exclDE:"Ein Affe?!", pluralEN:"Monkeys", pluralDE:"Affen",
+    colorEN:"brown", colorDE:"Braun", homeEN:"the jungle"
+  },
+  stella: {
+    id:"stella", name:"Stella", emoji:"🦄", who:"das Einhorn aus dem Regenbogenland",
+    persona:"You are Stella, a sparkly, kind 9-year-old unicorn girl from Rainbow Land. You love colours, painting, glitter and animals, and you also play JonahCraft",
+    voiceGender:"female", voiceLang:"en-GB", pitch:1.15,
+    grad:"radial-gradient(circle at 35% 30%,#FBE3F0,#E2618B)",
+    aEN:"a unicorn", introEN:"a unicorn from Rainbow Land", introDE:"ein Einhorn aus dem Regenbogenland",
+    speciesDE:"ein Einhorn", exclDE:"Ein Einhorn?!", pluralEN:"Unicorns", pluralDE:"Einhörner",
+    colorEN:"pink", colorDE:"Rosa", homeEN:"Rainbow Land"
+  },
+  sparky: {
+    id:"sparky", name:"Sparky", emoji:"🤖", who:"der Roboter aus der Zukunft",
+    persona:"You are Sparky, a friendly little 9-year-old robot from the future. You sometimes say 'Beep boop!', you love computers, building things and JonahCraft",
+    voiceGender:"male", voiceLang:"en-US", pitch:0.85,
+    grad:"radial-gradient(circle at 35% 30%,#E3E8EE,#7C8CA6)",
+    aEN:"a robot", introEN:"a robot from the future", introDE:"ein Roboter aus der Zukunft",
+    speciesDE:"ein Roboter", exclDE:"Ein Roboter?!", pluralEN:"Robots", pluralDE:"Roboter",
+    colorEN:"silver", colorDE:"Silber", homeEN:"the future"
   }
 };
 let buddy = BUDDIES.fred;
-/* Macht aus Freds festen Übungs-Sätzen automatisch Lucy-Sätze */
+/* Macht aus Freds festen Übungs-Sätzen automatisch Sätze des gewählten Freundes */
 function buddyize(s){
-  if (buddy.id === "fred") return s;
+  const b = buddy;
+  if (b.id === "fred") return s;
+  const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
   return s
-    .replace(/Fred/g, "Lucy")
-    .replace(/a fox from England/g, "a wolf from America")
-    .replace(/ein Fuchs aus England/g, "eine Wölfin aus Amerika")
-    .replace(/I'm a fox/g, "I'm a wolf")
-    .replace(/Ich bin ein Fuchs/g, "Ich bin eine Wölfin")
-    .replace(/Foxes are very clever/g, "Wolves are very clever")
-    .replace(/Füchse sind sehr schlau/g, "Wölfe sind sehr schlau")
-    .replace(/A fox\?!/g, "A wolf?!")
-    .replace(/Ein Fuchs\?!/g, "Eine Wölfin?!")
-    .replace(/orange - like me!/g, "blue - like the sky!")
-    .replace(/Orange - wie ich!/g, "Blau - wie der Himmel!")
-    .replace(/England/g, "America");
+    .replace(/Fred/g, b.name)
+    .replace(/a fox from England/g, b.introEN)
+    .replace(/ein Fuchs aus England/g, b.introDE)
+    .replace(/I'm a fox/g, "I'm " + b.aEN)
+    .replace(/Ich bin ein Fuchs/g, "Ich bin " + b.speciesDE)
+    .replace(/Foxes are very clever/g, b.pluralEN + " are very clever")
+    .replace(/Füchse sind sehr schlau/g, b.pluralDE + " sind sehr schlau")
+    .replace(/A fox\?!/g, cap(b.aEN) + "?!")
+    .replace(/Ein Fuchs\?!/g, b.exclDE)
+    .replace(/orange - like me!/g, b.colorEN + " - like me!")
+    .replace(/Orange - wie ich!/g, b.colorDE + " - wie ich!")
+    .replace(/England/g, b.homeEN);
 }
 
 /* ---------------- Sticker ---------------- */
@@ -864,14 +932,16 @@ function pickVoice(){
   voice = vs.slice().sort((a,b) => score(b) - score(a))[0];
 }
 /* Welche Stimme spricht gerade? Fred: die gewählte (oder automatisch eine
-   männliche). Lucy: automatisch eine Mädchenstimme, gern amerikanisch. */
+   männliche). Alle anderen Freunde suchen sich automatisch eine passende
+   Stimme (Junge/Mädchen + Wunsch-Land aus ihrem Steckbrief). */
 function voiceForBuddy(){
   if (buddy.id === "fred"){ if (!voice) pickVoice(); return voice; }
   const vs = englishVoices();
   if (!vs.length) return null;
+  const wantFemale = buddy.voiceGender === "female";
   const score = v =>
-    (FEMALE_HINT.test(v.name) ? 4 : 0) +
-    (MALE_HINT.test(v.name) ? -4 : 0) +
+    ((wantFemale ? FEMALE_HINT : MALE_HINT).test(v.name) ? 4 : 0) +
+    ((wantFemale ? MALE_HINT : FEMALE_HINT).test(v.name) ? -4 : 0) +
     (v.lang === buddy.voiceLang ? 2 : 0) +
     (/google/i.test(v.name) ? 1 : 0);
   return vs.slice().sort((a,b) => score(b) - score(a))[0];
@@ -901,8 +971,8 @@ function speak(text){
     if (v){ u.voice = v; u.lang = v.lang; }
     else u.lang = buddy.voiceLang;
     u.rate = 0.85;
-    /* Fred nutzt die eingestellte Stimmlage, Lucy klingt immer etwas heller */
-    u.pitch = buddy.id === "lucy" ? 1.2 : (state.pitch || 1.0);
+    /* Fred nutzt die eingestellte Stimmlage, jeder andere Freund seine eigene */
+    u.pitch = buddy.id === "fred" ? (state.pitch || 1.0) : buddy.pitch;
     u.onstart = () => { ttsWarned = true; };  /* Ton kam an - nie mehr warnen */
     u.onerror = () => {
       if (!ttsWarned){
@@ -1291,7 +1361,7 @@ function startChat(t){
   chatTopic = t; step = 0; kidTurns = 0; history = [];
   buddy = BUDDIES[state.buddy] || BUDDIES.fred;
   $("#chat-avatar").textContent = buddy.emoji;
-  $("#chat-avatar").classList.toggle("lucy", buddy.id === "lucy");
+  $("#chat-avatar").style.background = buddy.grad;
   $("#chat-name").textContent = buddy.name;
   aiMode = !!state.apiKey;
   setModePill();
@@ -1336,7 +1406,7 @@ function addMsg(who, text, de){
   const m = document.createElement("div");
   m.className = "msg " + who;
   let inner = "";
-  if (who === "fred") inner += '<div class="fred-face mini' + (buddy.id === "lucy" ? " lucy" : "") + '">' + buddy.emoji + '</div>';
+  if (who === "fred") inner += '<div class="fred-face mini" style="background:' + buddy.grad + '">' + buddy.emoji + '</div>';
   inner += '<div class="bubble">' + esc(text);
   if (who === "fred"){
     inner += '<span class="de-hint" hidden>' + esc(de || "") + '</span>' +

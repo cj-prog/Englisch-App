@@ -2,6 +2,13 @@
 
 ## 🆕 Was zuletzt neu kam
 
+- **Version 1.9:** Deine Freunde wohnen jetzt in einem **Messenger wie auf dem
+  Handy**! 📱 Tippe auf „Mit deinen Freunden reden" und du siehst alle 8
+  Freunde untereinander zum Hoch- und Runterschieben – mit der letzten
+  Nachricht darunter. Freund antippen → er fragt dich, worüber ihr reden
+  wollt. Und das Beste: Eure alten Nachrichten bleiben gespeichert, wie in
+  einem echten Chat!
+
 - **Version 1.8:** Jetzt hast du eine ganze **Freundes-Bande**! 🎉 Neben Fred
   und Lucy warten: Koko der Koala 🐨, Pip das Pinguin-Mädchen 🐧, Rex der
   Dino 🦖 (mit Brummstimme!), Milo der Affe 🐵, Stella das Einhorn 🦄 und

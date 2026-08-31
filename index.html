@@ -86,6 +86,26 @@
   }
   .fred-face.mini{width:44px;height:44px;font-size:26px;border-width:3px;animation:none;box-shadow:none;flex:none}
   .fred-face.lucy{background:radial-gradient(circle at 35% 30%,#D5E2EE,#8AA2B8)}
+  /* Messenger-Liste wie auf dem Handy */
+  .chatlist{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+  .chatrow{
+    display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+    background:var(--card);border:0;border-radius:20px;border-bottom:4px solid var(--sky-line);
+    padding:12px 16px;cursor:pointer;color:var(--ink);font-family:"Nunito",sans-serif;
+  }
+  .chatrow:active{transform:translateY(2px)}
+  .chatrow .ava{
+    width:54px;height:54px;border-radius:50%;display:grid;place-items:center;
+    font-size:30px;border:3px solid #fff;box-shadow:0 2px 6px rgba(34,69,107,.15);flex:none;
+  }
+  .chatrow .txt{flex:1;min-width:0}
+  .chatrow .nm{display:block;font-family:"Baloo 2",sans-serif;font-weight:800;font-size:1.15rem}
+  .chatrow .prev{
+    display:block;color:var(--ink-soft);font-weight:700;font-size:.9rem;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .chatrow .go{color:var(--ink-soft);font-size:1.3rem;flex:none}
+
   .buddyrow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:6px}
   @media (max-width:420px){.buddyrow{grid-template-columns:repeat(2,1fr)}}
   .buddybtn{
@@ -285,9 +305,18 @@
     <div class="menu">
       <button class="btn sun" data-go="topics-learn"><span class="big">📚</span> Wörter lernen</button>
       <button class="btn green" data-go="topics-quiz"><span class="big">🎯</span> Quiz spielen</button>
-      <button class="btn primary" data-go="topics-chat"><span class="big">💬</span> Mit deinen Freunden reden</button>
+      <button class="btn primary" data-go="chats"><span class="big">💬</span> Mit deinen Freunden reden</button>
       <button class="btn" data-go="album"><span class="big">⭐</span> Meine Sticker <span id="sticker-count" style="margin-left:auto;color:var(--fox-deep)"></span></button>
     </div>
+  </section>
+
+  <!-- ============ FREUNDE-MESSENGER ============ -->
+  <section class="screen" id="scr-chats">
+    <div class="topbar">
+      <button class="iconbtn" data-go="home" aria-label="Zurück">←</button>
+      <span class="title">Deine Freunde</span>
+    </div>
+    <div class="chatlist" id="chatlist"></div>
   </section>
 
   <!-- ============ TOPIC SELECT ============ -->
@@ -515,7 +544,7 @@
    Fred der Englisch-Fuchs
    Ein Lern-Kumpel für Kinder in der 3. Klasse (erste englische Wörter).
    ===================================================================== */
-const APP_VERSION = "1.8";
+const APP_VERSION = "1.9";
 
 /* ---------------- Daten: Themen & Wortschatz-Kisten ---------------- */
 const TOPICS = [
@@ -830,7 +859,7 @@ const RARITY_DE = { common:"Normal", rare:"Selten ✨", epic:"SUPER-SELTEN 💥"
 /* ---------------- Speicher ---------------- */
 const DEFAULTS = { name:"Jonah", apiKey:"", model:"claude-opus-5",
                    voiceName:"", pitch:1.0, lastVersion:"", buddy:"fred",
-                   learned:[], stickers:[], done:{}, transcript:[] };
+                   learned:[], stickers:[], done:{}, transcript:[], chats:{} };
 let state = load();
 buddy = BUDDIES[state.buddy] || BUDDIES.fred;
 function load(){
@@ -862,12 +891,12 @@ function nav(token){
 function route(){
   let token = (location.hash || "#home").replace(/^#/, "") || "home";
   if (token === "topics-learn"){ mode = "learn"; token = "topics"; }
-  else if (token === "topics-chat"){ mode = "chat"; token = "topics"; }
+  else if (token === "topics-chat"){ token = "chats"; }   /* alter Weg -> Messenger */
   else if (token === "topics-quiz"){ mode = "quiz"; token = "topics"; }
   /* Bildschirme, deren Sitzung vorbei ist, führen zurück nach Hause */
   if (token === "lesson" && (!lesson || li >= lesson.words.length)) return location.replace("#home");
   if (token === "quiz" && (!quiz || quiz.qi >= quiz.qs.length)) return location.replace("#home");
-  if (token === "chat" && !chatTopic) return location.replace("#home");
+  if (token === "chat" && !chatOpen) return location.replace("#home");
   if (token === "reward" && !rewardReady) return location.replace("#home");
   if (token === "parents" && !parentsUnlocked) return location.replace("#home");
   if (!document.getElementById("scr-" + token)) return location.replace("#home");
@@ -881,6 +910,7 @@ function prepareScreen(id){
   if (id === "home") renderHome();
   else if (id === "album") renderAlbum();
   else if (id === "topics") buildTopics();
+  else if (id === "chats") renderChats();
   else if (id === "parents") renderParents();
   else if (id === "lesson") renderWord();
   else if (id === "quiz") renderQuiz();
@@ -892,8 +922,7 @@ function prepareScreen(id){
   }
   else if (id === "chat" && chatPending){
     chatPending = false;
-    if (aiMode) askFredAI("START");
-    else fredSays(scriptLine(chatTopic.chat[0]));
+    askTopic();
   }
 }
 window.addEventListener("hashchange", route);
@@ -1076,29 +1105,9 @@ $("#fred-hero").addEventListener("click", () => speak("Hello " + state.name + "!
 /* ---------------- Themen-Auswahl ---------------- */
 function buildTopics(){
   $("#topics-title").textContent =
-    mode === "learn" ? "Was willst du lernen?" :
-    mode === "quiz"  ? "Welches Quiz spielst du?" : "Worüber reden wir?";
+    mode === "learn" ? "Was willst du lernen?" : "Welches Quiz spielst du?";
   const list = $("#topiclist");
   list.innerHTML = "";
-  if (mode === "chat"){
-    /* Erst den Freund aussuchen, dann das Thema */
-    const row = document.createElement("div");
-    row.className = "buddyrow";
-    Object.values(BUDDIES).forEach(b => {
-      const btn = document.createElement("button");
-      btn.className = "buddybtn" + (state.buddy === b.id ? " sel" : "");
-      btn.innerHTML = '<span class="big">' + b.emoji + '</span>' + esc(b.name) +
-                      '<small>' + esc(b.who) + '</small>';
-      btn.addEventListener("click", () => {
-        state.buddy = b.id; save();
-        buddy = b;
-        buildTopics();
-        speak("Hi " + state.name + "! I'm " + b.name + "!");
-      });
-      row.appendChild(btn);
-    });
-    list.appendChild(row);
-  }
   TOPICS.forEach(t => {
     const b = document.createElement("button");
     b.className = "btn";
@@ -1106,9 +1115,42 @@ function buildTopics(){
     b.innerHTML = '<span class="big">' + t.emoji + '</span> ' + esc(t.title) +
                   (state.done[doneKey] ? '<span class="topic-done">✅</span>' : "");
     b.addEventListener("click", () =>
-      mode === "learn" ? startLesson(t) : mode === "quiz" ? startQuiz(t) : startChat(t));
+      mode === "learn" ? startLesson(t) : startQuiz(t));
     list.appendChild(b);
   });
+}
+
+/* ---------------- Freunde-Messenger (wie auf dem Handy) ---------------- */
+function renderChats(){
+  const list = $("#chatlist");
+  list.innerHTML = "";
+  Object.values(BUDDIES).forEach(b => {
+    const log = (state.chats && state.chats[b.id]) || [];
+    const last = log[log.length - 1];
+    const preview = last
+      ? (last.w === "k" ? "Du: " : "") + last.t
+      : b.who + " – sag mal Hallo!";
+    const row = document.createElement("button");
+    row.className = "chatrow";
+    row.innerHTML =
+      '<span class="ava" style="background:' + b.grad + '">' + b.emoji + '</span>' +
+      '<span class="txt"><span class="nm">' + esc(b.name) + '</span>' +
+      '<span class="prev">' + esc(preview) + '</span></span>' +
+      '<span class="go">›</span>';
+    row.addEventListener("click", () => openBuddyChat(b));
+    list.appendChild(row);
+  });
+}
+function chatLog(){
+  if (!state.chats) state.chats = {};
+  if (!state.chats[buddy.id]) state.chats[buddy.id] = [];
+  return state.chats[buddy.id];
+}
+function pushChatLog(entry){
+  const log = chatLog();
+  log.push(entry);
+  if (log.length > 30) state.chats[buddy.id] = log.slice(-30);
+  save();
 }
 
 /* ---------------- Wortschatz-Kiste ---------------- */
@@ -1356,10 +1398,12 @@ $("#pg-next").addEventListener("click", () => flipPage(1));
    Zwei Modi: Übungsmodus (feste Dialoge) und KI-Modus (Claude-API).
    ===================================================================== */
 let chatTopic = null, step = 0, kidTurns = 0, history = [], aiMode = false, busy = false;
+let chatOpen = false;
 
-function startChat(t){
-  chatTopic = t; step = 0; kidTurns = 0; history = [];
-  buddy = BUDDIES[state.buddy] || BUDDIES.fred;
+function openBuddyChat(b){
+  buddy = b; state.buddy = b.id; save();
+  chatTopic = null; step = 0; kidTurns = 0; history = [];
+  chatOpen = true;
   $("#chat-avatar").textContent = buddy.emoji;
   $("#chat-avatar").style.background = buddy.grad;
   $("#chat-name").textContent = buddy.name;
@@ -1369,8 +1413,35 @@ function startChat(t){
   $("#msgs").innerHTML = "";
   $("#transbox").hidden = true; $("#tin").value = ""; $("#tout").hidden = true;
   $("#tsend").textContent = "➤ An " + buddy.name + " schicken";
+  /* Alte Nachrichten wie in einem echten Messenger wieder anzeigen */
+  chatLog().forEach(m => addMsg(m.w === "k" ? "kid" : "fred", m.t, m.d || ""));
   chatPending = true;
   nav("chat");
+}
+
+/* Der Freund fragt zuerst, worüber geredet werden soll */
+function askTopic(){
+  const line = "Hi " + state.name + "! What do you want to talk about?";
+  addMsg("fred", line, "Hi " + state.name + "! Worüber willst du reden?");
+  speak(line);
+  renderTopicChips();
+}
+function renderTopicChips(){
+  const c = $("#chips");
+  c.innerHTML = "";
+  TOPICS.forEach(t => {
+    const b = document.createElement("button");
+    b.className = "chip";
+    b.innerHTML = t.emoji + " " + esc(t.title) + "<small>Thema wählen</small>";
+    b.addEventListener("click", () => beginTopic(t));
+    c.appendChild(b);
+  });
+}
+function beginTopic(t){
+  chatTopic = t; step = 0; history = [];
+  renderChips([]);
+  if (aiMode) askFredAI("START");
+  else fredSays(scriptLine(t.chat[0]));
 }
 function setModePill(){
   const p = $("#modepill");
@@ -1392,6 +1463,7 @@ function fredSays(msg){
   speak(msg.reply);
   renderChips(msg.suggestions || []);
   state.transcript.push({ who: buddy.name, text: msg.reply });
+  pushChatLog({ w:"f", t: msg.reply, d: msg.de || "" });
   save();
   if (msg.end){
     setTimeout(() => {
@@ -1445,10 +1517,18 @@ function childSays(text){
   text = text.trim();
   addMsg("kid", text);
   state.transcript.push({ who: state.name, text: text });
+  pushChatLog({ w:"k", t: text });
   save();
   kidTurns++;
   renderChips([]);
   $("#chat-input").value = "";
+  if (!chatTopic){
+    /* Kind redet einfach los, ohne Thema zu wählen - klappt auch! */
+    chatTopic = TOPICS[0]; step = 0; history = [];
+    if (aiMode){ askFredAI(text); }
+    else { setTimeout(() => fredSays(scriptLine(chatTopic.chat[0])), 700); }
+    return;
+  }
   if (aiMode){
     askFredAI(text);
   } else {
@@ -1464,8 +1544,8 @@ $("#chat-input").addEventListener("keydown", ev => {
   if (ev.key === "Enter") childSays($("#chat-input").value);
 });
 $("#chat-back").addEventListener("click", () => {
-  speechSynthesis && speechSynthesis.cancel();
-  nav("home");
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  nav("chats");   /* zurück zur Freunde-Liste, wie im Messenger */
 });
 $("#chat-done").addEventListener("click", () => {
   speechSynthesis && speechSynthesis.cancel();

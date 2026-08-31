@@ -2,6 +2,10 @@
 
 ## 🆕 Was zuletzt neu kam
 
+- **Version 2.0:** Die Themen im Chat stehen jetzt **groß untereinander** –
+  wie eine richtige Liste zum Antippen, bei jedem Freund gleich. Oben siehst
+  du immer das Bild von deinem Freund.
+
 - **Version 1.9:** Deine Freunde wohnen jetzt in einem **Messenger wie auf dem
   Handy**! 📱 Tippe auf „Mit deinen Freunden reden" und du siehst alle 8
   Freunde untereinander zum Hoch- und Runterschieben – mit der letzten

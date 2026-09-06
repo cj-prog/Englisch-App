@@ -2,6 +2,12 @@
 
 ## 🆕 Was zuletzt neu kam
 
+- **Version 2.3:** Die App startet jetzt mit **allen deinen Freunden**! Du
+  tippst auf den, den du besuchen willst – und dann kommt **seine eigene
+  Seite** mit „Hello Jonah!" und den Knöpfen untereinander: 📚 Wörter lernen,
+  🎯 Quiz spielen, 💬 Mit ihm reden, ⭐ Meine Sticker. Alles machst du
+  zusammen mit dem Freund, den du dir ausgesucht hast!
+
 - **Version 2.2:** Endlich **echte verschiedene Stimmen**! Viele Tablets haben
   nur eine einzige englische Stimme – deshalb klangen alle Freunde ähnlich.
   Mit einem (kostenlosen) Google-Stimmen-Schlüssel im Elternbereich bekommt

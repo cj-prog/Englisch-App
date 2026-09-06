@@ -2,6 +2,17 @@
 
 ## 🆕 Was zuletzt neu kam
 
+- **Version 2.5:** Deine Freunde wissen jetzt, was du in **JonahCraft** machst!
+  🎮 Beide Apps liegen auf derselben Adresse und teilen sich denselben
+  Speicher. Wenn du drüben ein Level in der Halle, eine Mission oder die große
+  Schlacht schaffst, schreibt dir hier ein Freund: „Wow! I heard it: Jonah won
+  the great battle! Well done!" – natürlich mit deutscher Übersetzung. Und in
+  JonahCraft gibt es einen Plausch, in dem sich deine englischen Freunde mit
+  den Leuten aus deinem Dorf unterhalten. Was dort gesagt wurde, erzählen sie
+  dir hier weiter: „Emma says: I am baking bread. Is that true?" Auch die
+  KI-Antworten wissen davon – ein Gespräch geht also einfach weiter, egal in
+  welcher App es angefangen hat.
+
 - **Version 2.4:** Deine Freunde **rennen nicht mehr mitten im Gespräch weg**!
   Vorher hat die App nach dem Tschüss einfach zugemacht, sogar mitten im Satz.
   Jetzt bleibt dein Freund, solange DU willst: Beim Abschied erscheint nur ein

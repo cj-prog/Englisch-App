@@ -2,6 +2,12 @@
 
 ## 🆕 Was zuletzt neu kam
 
+- **Version 2.4:** Deine Freunde **rennen nicht mehr mitten im Gespräch weg**!
+  Vorher hat die App nach dem Tschüss einfach zugemacht, sogar mitten im Satz.
+  Jetzt bleibt dein Freund, solange DU willst: Beim Abschied erscheint nur ein
+  Knopf „⭐ Tschüss sagen und Sticker holen" – und wenn du ihn bittest zu
+  bleiben, redet ihr einfach weiter. Du bestimmst, wann Schluss ist!
+
 - **Version 2.3:** Die App startet jetzt mit **allen deinen Freunden**! Du
   tippst auf den, den du besuchen willst – und dann kommt **seine eigene
   Seite** mit „Hello Jonah!" und den Knöpfen untereinander: 📚 Wörter lernen,

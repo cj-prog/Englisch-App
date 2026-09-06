@@ -573,7 +573,7 @@
    Fred der Englisch-Fuchs
    Ein Lern-Kumpel für Kinder in der 3. Klasse (erste englische Wörter).
    ===================================================================== */
-const APP_VERSION = "2.3";
+const APP_VERSION = "2.4";
 
 /* ---------------- Daten: Themen & Wortschatz-Kisten ---------------- */
 const TOPICS = [
@@ -1636,13 +1636,10 @@ function fredSays(msg){
   state.transcript.push({ who: buddy.name, text: msg.reply });
   pushChatLog({ w:"f", t: msg.reply, d: msg.de || "" });
   save();
-  if (msg.end){
-    setTimeout(() => {
-      if (!$("#scr-chat").classList.contains("on")) return; /* schon woanders */
-      if (kidTurns >= 3) giveSticker("Tolles Gespräch mit " + buddy.name + "! 🎉");
-      else nav("home");
-    }, 2500);
-  }
+  /* Der Freund geht NIE von selbst - kein Countdown, kein Rauswurf!
+     Bei einer Verabschiedung (oder nach vielen Runden) erscheint nur ein
+     Extra-Knopf, und Jonah entscheidet selbst, wann Schluss ist. */
+  if (msg.end || (aiMode && kidTurns >= 6)) addEndChip();
 }
 
 function addMsg(who, text, de){
@@ -1684,6 +1681,21 @@ function renderChips(suggs){
   });
 }
 
+function addEndChip(){
+  const c = $("#chips");
+  const b = document.createElement("button");
+  b.className = "chip";
+  b.style.background = "var(--sun)";
+  b.style.borderBottomColor = "var(--sun-deep)";
+  b.innerHTML = "⭐ Tschüss sagen<small>und Sticker holen</small>";
+  b.addEventListener("click", endChat);
+  c.appendChild(b);
+}
+function endChat(){
+  if (kidTurns >= 3) giveSticker("Tolles Gespräch mit " + buddy.name + "! 🎉");
+  else nav("home");
+}
+
 function childSays(text){
   if (busy || !text.trim()) return;
   text = text.trim();
@@ -1707,7 +1719,18 @@ function childSays(text){
     step++;
     const line = chatTopic.chat[step];
     if (line) setTimeout(() => fredSays(scriptLine(line)), 700);
-    else setTimeout(() => giveSticker("Tolles Gespräch mit " + buddy.name + "! 🎉"), 700);
+    else setTimeout(() => {
+      /* Das Übungs-Skript ist zu Ende, aber Jonah will weiterreden?
+         Dann bleibt der Freund natürlich da! */
+      chatTopic = null; step = 0;
+      fredSays({
+        reply: "Okay, I can stay a little longer! 🎉 What do you want to talk about?",
+        de: "Okay, ich kann noch ein bisschen bleiben! Worüber willst du reden?",
+        suggestions: []
+      });
+      renderTopicChips();
+      addEndChip();
+    }, 700);
   }
 }
 
@@ -1755,7 +1778,7 @@ function systemPrompt(){
     "- If " + state.name + " writes German or seems stuck: help with the English word plus a tiny German hint in brackets.",
     "- Never criticize mistakes. Instead, repeat the sentence correctly inside your friendly reply.",
     "- Stay strictly kid-safe: no scary, violent or adult topics. Never ask for personal information (address, school, phone). Never suggest meeting in real life. If something inappropriate comes up, cheerfully change the topic.",
-    "- After about 8 exchanges, start saying a warm goodbye."
+    "- NEVER leave or end the chat by yourself. If the chat gets very long you may say you will have to go soon - but if " + state.name + " asks you to stay or keeps talking, happily stay and keep talking as long as he likes. Never repeat a goodbye he did not accept."
   ].concat(jonahcraft).concat([
     "",
     'OUTPUT: Respond ONLY with minified JSON, no markdown, exactly this shape:',
@@ -1813,7 +1836,6 @@ async function askFredAI(childText){
     const raw = textBlock ? textBlock.text : "";
     const msg = parseFred(raw);
     history.push({ role:"assistant", content: raw });
-    if (kidTurns >= 9) msg.end = true;
     fredSays(msg);
   } catch(e){
     if (e && e.kind === "auth"){

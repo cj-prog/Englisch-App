@@ -2,6 +2,13 @@
 
 ## 🆕 Was zuletzt neu kam
 
+- **Version 2.2:** Endlich **echte verschiedene Stimmen**! Viele Tablets haben
+  nur eine einzige englische Stimme – deshalb klangen alle Freunde ähnlich.
+  Mit einem (kostenlosen) Google-Stimmen-Schlüssel im Elternbereich bekommt
+  jetzt jeder Freund seine eigene: Fred ein britischer Junge, Rex ein richtig
+  tiefer Brummbär 🦖, Koko ein Australier, Lucy und Pip echte Mädchenstimmen.
+  Ohne Schlüssel bleibt alles wie bisher.
+
 - **Version 2.1:** Deine Freunde **schreiben dir jetzt von selbst**! 📩 Wenn du
   eine Weile weg warst, warten neue Nachrichten auf dich (grüner Punkt und
   „NEU" in der Liste, 📩-Zähler auf der Startseite) – und auch beim Spielen

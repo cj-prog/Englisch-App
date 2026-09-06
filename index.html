@@ -498,10 +498,27 @@
       <div class="note" id="voice-active">–</div>
       <div class="note">
         Welche Stimmen es gibt, bestimmt das Gerät. Die App wählt automatisch eine
-        männliche englische Stimme, wenn eine da ist. Die anderen Freunde
-        suchen sich ihre Stimme und Tonlage von selbst. Hinweis: Ein paar
-        „Google“-Stimmen ignorieren die Stimmlage - dann lieber eine andere
-        Stimme aus der Liste probieren.
+        männliche englische Stimme, wenn eine da ist - viele Tablets haben aber
+        nur EINE englische Stimme. Für echte, verschiedene Stimmen: Premium-Stimmen
+        unten einrichten.
+      </div>
+    </div>
+
+    <div class="panel">
+      <label for="set-gkey">Premium-Stimmen: Google-TTS-Schlüssel (optional)</label>
+      <input id="set-gkey" type="password" placeholder="AIza…">
+      <div class="btnrow">
+        <button class="btn small sun" id="btn-gtest">🔊 Premium-Stimmen testen</button>
+      </div>
+      <div class="note" id="gstatus">Status: <b>kein Schlüssel - Tablet-Stimme aktiv</b></div>
+      <div class="note">
+        Damit bekommt <b>jeder Freund eine echte eigene Stimme</b> (Fred: britischer
+        Junge, Rex: tiefer Brummbär, Lucy &amp; Pip: echte Mädchenstimmen …).
+        Einrichten auf <b>console.cloud.google.com</b>: Projekt anlegen →
+        „Cloud Text-to-Speech API" aktivieren → unter „Anmeldedaten" einen
+        API-Schlüssel erstellen (am besten auf diese API beschränken).
+        Das Gratis-Kontingent (1&nbsp;Mio. Zeichen/Monat) reicht für tägliches
+        Üben dicke. Der Schlüssel bleibt nur auf diesem Gerät.
       </div>
     </div>
 
@@ -554,7 +571,7 @@
    Fred der Englisch-Fuchs
    Ein Lern-Kumpel für Kinder in der 3. Klasse (erste englische Wörter).
    ===================================================================== */
-const APP_VERSION = "2.1";
+const APP_VERSION = "2.2";
 
 /* ---------------- Daten: Themen & Wortschatz-Kisten ---------------- */
 const TOPICS = [
@@ -867,7 +884,7 @@ const STICKERS = [
 const RARITY_DE = { common:"Normal", rare:"Selten ✨", epic:"SUPER-SELTEN 💥" };
 
 /* ---------------- Speicher ---------------- */
-const DEFAULTS = { name:"Jonah", apiKey:"", model:"claude-opus-5",
+const DEFAULTS = { name:"Jonah", apiKey:"", gKey:"", model:"claude-opus-5",
                    voiceName:"", pitch:1.0, lastVersion:"", buddy:"fred",
                    learned:[], stickers:[], done:{}, transcript:[], chats:{},
                    unread:{}, lastMsgGen:0 };
@@ -912,6 +929,7 @@ function route(){
   if (token === "parents" && !parentsUnlocked) return location.replace("#home");
   if (!document.getElementById("scr-" + token)) return location.replace("#home");
   if (window.speechSynthesis) speechSynthesis.cancel();
+  if (currentAudio){ currentAudio.pause(); currentAudio = null; }
   prepareScreen(token);
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("on"));
   $("#scr-" + token).classList.add("on");
@@ -995,8 +1013,61 @@ if (window.speechSynthesis){
   pickVoice();
   speechSynthesis.onvoiceschanged = refreshVoiceUI;
 }
+/* ---- Premium-Stimmen über Google Cloud Text-to-Speech (optional) ----
+   Das Tablet hat oft nur EINE englische Stimme - mit einem Google-TTS-
+   Schlüssel bekommt jeder Freund eine echte eigene Stimme. */
+const GOOGLE_VOICES = {
+  fred:   { lang:"en-GB", name:"en-GB-Neural2-B", rate:0.9,  pitch:0 },   /* britischer Junge  */
+  lucy:   { lang:"en-US", name:"en-US-Neural2-F", rate:0.9,  pitch:2 },   /* amerikanisches Mädchen */
+  koko:   { lang:"en-AU", name:"en-AU-Neural2-B", rate:0.88, pitch:1 },   /* Australier */
+  pip:    { lang:"en-GB", name:"en-GB-Neural2-A", rate:0.95, pitch:5 },   /* piepsiges Mädchen */
+  rex:    { lang:"en-US", name:"en-US-Neural2-D", rate:0.85, pitch:-8 },  /* tiefer Brumm-Dino */
+  milo:   { lang:"en-US", name:"en-US-Neural2-I", rate:1.0,  pitch:5 },   /* quirliger Affe */
+  stella: { lang:"en-GB", name:"en-GB-Neural2-F", rate:0.9,  pitch:3 },   /* sanftes Einhorn */
+  sparky: { lang:"en-US", name:"en-US-Neural2-J", rate:1.05, pitch:-3 }   /* Roboter */
+};
+let currentAudio = null, gttsFails = 0;
+const gttsCache = new Map();
+async function speakGoogle(text){
+  try {
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    if (currentAudio){ currentAudio.pause(); currentAudio = null; }
+    const cacheKey = buddy.id + "|" + text;
+    let b64 = gttsCache.get(cacheKey);
+    if (!b64){
+      const v = GOOGLE_VOICES[buddy.id] || GOOGLE_VOICES.fred;
+      const res = await fetch("https://texttospeech.googleapis.com/v1/text:synthesize?key=" + encodeURIComponent(state.gKey), {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          input: { text: text },
+          voice: { languageCode: v.lang, name: v.name },
+          audioConfig: { audioEncoding: "MP3", speakingRate: v.rate, pitch: v.pitch }
+        })
+      });
+      if (!res.ok) throw new Error("http " + res.status);
+      const data = await res.json();
+      b64 = data.audioContent;
+      if (!b64) throw new Error("leer");
+      gttsCache.set(cacheKey, b64);   /* gleiche Sätze nicht doppelt bezahlen */
+      if (gttsCache.size > 60) gttsCache.delete(gttsCache.keys().next().value);
+    }
+    gttsFails = 0;
+    currentAudio = new Audio("data:audio/mp3;base64," + b64);
+    currentAudio.play();
+  } catch(e){
+    gttsFails++;
+    if (gttsFails === 3) toast("Die Google-Stimmen klappen gerade nicht - ich nehme die Tablet-Stimme. (Google-Schlüssel im Elternbereich prüfen)", 5000);
+    speakBrowser(text);
+  }
+}
+
 let ttsWarned = false;
 function speak(text){
+  if (state.gKey && gttsFails < 3){ speakGoogle(text); return; }
+  speakBrowser(text);
+}
+function speakBrowser(text){
   if (!window.speechSynthesis){
     if (!ttsWarned){ ttsWarned = true; toast("Dieser Browser kann leider nicht vorlesen - probier Chrome!"); }
     return;
@@ -1897,9 +1968,13 @@ function renderParents(){
   const p = state.pitch || 1.0;
   $("#set-pitch").value = p < 0.9 ? "0.7" : p > 1.1 ? "1.3" : "1.0";
   pickVoice();
-  $("#voice-active").innerHTML = voice
-    ? "Gerade aktiv: <b>" + esc(voice.name) + "</b> (" + esc(voice.lang) + ")"
-    : "Noch keine englische Stimme gefunden - sobald das Gerät eine lädt, erscheint sie hier.";
+  $("#voice-active").innerHTML = state.gKey && gttsFails < 3
+    ? "Gerade aktiv: <b>Premium-Stimmen (Google)</b> - jeder Freund hat seine eigene Stimme"
+    : voice
+      ? "Gerade aktiv: <b>" + esc(voice.name) + "</b> (" + esc(voice.lang) + ")"
+      : "Noch keine englische Stimme gefunden - sobald das Gerät eine lädt, erscheint sie hier.";
+  $("#set-gkey").value = state.gKey || "";
+  $("#gstatus").innerHTML = "Status: <b>" + (state.gKey ? "Schlüssel gespeichert" : "kein Schlüssel - Tablet-Stimme aktiv") + "</b>";
   $("#ver-label").textContent = APP_VERSION;
   $("#learned-count").textContent = state.learned.length;
   const lp = $("#learned-list");
@@ -1936,6 +2011,24 @@ $("#btn-voicetest").addEventListener("click", () => {
   buddy = BUDDIES.fred;   /* der Test hier gilt immer Freds Stimme */
   speak("Hello " + state.name + "! I am Fred the fox!");
 });
+$("#set-gkey").addEventListener("change", ev => {
+  state.gKey = ev.target.value.trim(); save();
+  gttsFails = 0; gttsCache.clear();
+  $("#gstatus").innerHTML = "Status: <b>" + (state.gKey ? "Schlüssel gespeichert - bitte testen" : "kein Schlüssel - Tablet-Stimme aktiv") + "</b>";
+});
+$("#btn-gtest").addEventListener("click", async () => {
+  state.gKey = $("#set-gkey").value.trim(); save();
+  const st = $("#gstatus");
+  if (!state.gKey){ st.innerHTML = "Status: <b>kein Schlüssel - Tablet-Stimme aktiv</b>"; return; }
+  st.innerHTML = "Status: <b>teste …</b>";
+  gttsFails = 0; gttsCache.clear();
+  /* Nacheinander Fred und Rex - so hört man sofort den Unterschied */
+  buddy = BUDDIES.fred;
+  await speakGoogle("Hello! I am Fred from England!");
+  if (gttsFails){ st.innerHTML = "Status: <b>❌ hat nicht geklappt - Schlüssel prüfen (und ob die Text-to-Speech-API aktiviert ist)</b>"; return; }
+  st.innerHTML = "Status: <b>✅ Premium-Stimmen aktiv! Jeder Freund klingt jetzt anders.</b>";
+  setTimeout(() => { buddy = BUDDIES.rex; speakGoogle("And I am Rex! RAWR!"); }, 2600);
+});
 $("#btn-keytest").addEventListener("click", async () => {
   state.apiKey = $("#set-key").value.trim(); save();
   const st = $("#keystatus");
@@ -1971,7 +2064,8 @@ $("#btn-keytest").addEventListener("click", async () => {
 function backupDownload(auto){
   try {
     const copy = Object.assign({}, state);
-    delete copy.apiKey;   /* der Schlüssel gehört nicht in eine teilbare Datei */
+    delete copy.apiKey;   /* Schlüssel gehören nicht in eine teilbare Datei */
+    delete copy.gKey;
     const blob = new Blob([JSON.stringify(copy, null, 2)], { type:"application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -1995,8 +2089,9 @@ $("#restore-file").addEventListener("change", ev => {
       if (!data || !Array.isArray(data.stickers) || !Array.isArray(data.learned)){
         toast("Das ist keine Fred-Sicherungsdatei. 🙈"); return;
       }
-      delete data.apiKey;               /* aktuellen Schlüssel behalten */
-      state = Object.assign({}, DEFAULTS, state, data, { apiKey: state.apiKey });
+      delete data.apiKey;               /* aktuelle Schlüssel behalten */
+      delete data.gKey;
+      state = Object.assign({}, DEFAULTS, state, data, { apiKey: state.apiKey, gKey: state.gKey });
       save();
       renderParents(); renderHome();
       toast("Sicherung geladen - " + state.stickers.length + " Sticker sind zurück! 🎉");

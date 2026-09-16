@@ -283,6 +283,27 @@
   .panel .note{font-size:.9rem;color:var(--ink-soft);margin-top:8px}
   .wordpills{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
   .wordpills span{background:var(--bubble-kid);border-radius:12px;padding:4px 12px;font-weight:800;font-size:.9rem}
+  /* 📊 Lernfortschritt aus JonahCraft */
+  .lernkopf{display:flex;align-items:baseline;gap:8px;margin-top:10px;font-weight:900}
+  .lernkopf .stufe{font-size:.85rem;color:var(--ink-soft);font-weight:800}
+  .lernbar{height:14px;border-radius:8px;background:#E8E3DA;overflow:hidden;margin:6px 0 2px}
+  .lernbar i{display:block;height:100%;background:var(--leaf,#7BBF6A)}
+  .lernzahl{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.92rem;margin-top:6px}
+  .lernzahl b{font-size:1.05rem}
+  .punkte{display:flex;gap:4px;margin-top:6px}
+  .punkte i{width:14px;height:14px;border-radius:50%;background:#E0DAD0;display:block}
+  .punkte i.gut{background:#6FBF5E}
+  .punkte i.uebt{background:#F0B24A}
+  .tage{display:flex;align-items:flex-end;gap:3px;height:70px;margin-top:10px}
+  .tage div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:1px;min-width:0}
+  .tage u{display:block;border-radius:2px;text-decoration:none}
+  .tage .rechnen{background:#5B9BD5}
+  .tage .woerter{background:#7BBF6A}
+  .tageachse{display:flex;gap:3px;font-size:.6rem;color:var(--ink-soft);margin-top:3px}
+  .tageachse span{flex:1;text-align:center;min-width:0;overflow:hidden}
+  .legende{display:flex;gap:14px;font-size:.8rem;color:var(--ink-soft);margin-top:8px;flex-wrap:wrap}
+  .legende em{font-style:normal;display:inline-block;width:11px;height:11px;border-radius:3px;
+    vertical-align:-1px;margin-right:4px}
   .transcript{max-height:260px;overflow-y:auto;font-size:.92rem;margin-top:8px}
   .transcript p{margin:4px 0}
   .transcript b{color:var(--fox-deep)}
@@ -534,7 +555,17 @@
     </div>
 
     <div class="panel">
-      <label>Gelernte Wörter (<span id="learned-count">0</span>)</label>
+      <label>📊 Lernfortschritt in JonahCraft</label>
+      <div id="lern-inhalt"></div>
+      <div class="note" id="lern-note">
+        Die Lern-Pausen in JonahCraft (Einmaleins und englische Wörter) schreiben
+        für jeden Tag mit, wie viele Aufgaben Jonah gelöst hat. Die Daten liegen
+        nur auf diesem Gerät - beide Apps teilen sich denselben Speicher.
+      </div>
+    </div>
+
+    <div class="panel">
+      <label>Gelernte Wörter hier in der App (<span id="learned-count">0</span>)</label>
       <div class="wordpills" id="learned-list"></div>
     </div>
 
@@ -573,7 +604,7 @@
    Fred der Englisch-Fuchs
    Ein Lern-Kumpel für Kinder in der 3. Klasse (erste englische Wörter).
    ===================================================================== */
-const APP_VERSION = "2.5";
+const APP_VERSION = "2.6";
 
 /* ---------------- Daten: Themen & Wortschatz-Kisten ---------------- */
 const TOPICS = [
@@ -2046,8 +2077,121 @@ $("#tsend").addEventListener("click", () => {
   lastTrans = "";
 });
 
+/* ---------------- 📊 Lernfortschritt aus JonahCraft ----------------
+   JonahCraft liegt auf derselben Adresse und benutzt denselben Speicher -
+   wir können seinen Spielstand also einfach mitlesen. Geschrieben wird hier
+   NICHTS: das ist eine reine Ansicht für Mama und Papa. Die Namen der Stufen
+   stehen mit im Spielstand, damit hier keine zweite Tabelle gepflegt werden
+   muss, die irgendwann nicht mehr zur anderen passt. */
+const JC_KEY = "jonahcraft_save_v1";
+function jcLaden(){
+  try { const r = localStorage.getItem(JC_KEY); return r ? JSON.parse(r) : null; }
+  catch(e){ return null; }
+}
+function jcDatum(ms){
+  if (!ms) return "noch nie";
+  const d = new Date(ms), h = new Date();
+  const tage = Math.round((new Date(h.getFullYear(),h.getMonth(),h.getDate()) -
+                           new Date(d.getFullYear(),d.getMonth(),d.getDate())) / 86400000);
+  const wann = d.toLocaleDateString("de-DE", {day:"2-digit", month:"2-digit"}) + ", " +
+               d.toLocaleTimeString("de-DE", {hour:"2-digit", minute:"2-digit"}) + " Uhr";
+  return (tage <= 0 ? "heute" : tage === 1 ? "gestern" : "vor " + tage + " Tagen") + " (" + wann + ")";
+}
+/* die letzten zehn Aufgaben als Punktereihe: grün = auf Anhieb richtig */
+function jcPunkte(letzte){
+  if (!letzte || !letzte.length) return "";
+  return '<div class="punkte">' + letzte.slice(-10).map(v =>
+    '<i class="' + (v ? "gut" : "uebt") + '"></i>').join("") + "</div>";
+}
+/* ein Fach (Rechnen oder Wörter) als Block */
+function jcFach(emoji, titel, d, stufenWort, einheit){
+  if (!d) return "";
+  const stufe = (d.stufe|0) + 1, stufen = d.stufen || 9;
+  const ziel = d.ziel || 15, inStufe = d.inStufe|0;
+  const anteil = Math.max(0, Math.min(100, Math.round(inStufe / ziel * 100)));
+  const letzte = d.letzte || [];
+  const anhieb = letzte.length
+    ? Math.round(letzte.reduce((s2,v) => s2 + (v?1:0), 0) / letzte.length * 100) : null;
+  // Wackelkandidaten: was das Spiel gerade besonders oft übt
+  const wack = Object.keys(d.fehler || {})
+    .filter(k => d.fehler[k] > 0)
+    .sort((a2,b2) => d.fehler[b2] - d.fehler[a2]).slice(0, 8)
+    .map(k => k.replace(/^(\d+)x(\d+)$/, "$1 × $2"));   // 7x8 liest sich als 7 × 8
+  let h = '<div class="lernkopf">' + emoji + " " + titel +
+          '<span class="stufe">' + stufenWort + " " + stufe + " von " + stufen + "</span></div>";
+  if (d.name) h += '<div style="font-size:.92rem;color:var(--ink-soft)">' + esc(d.name) + "</div>";
+  h += '<div class="lernbar"><i style="width:' + anteil + '%"></i></div>' +
+       '<div style="font-size:.78rem;color:var(--ink-soft)">' +
+       (stufe >= stufen ? inStufe + " auf der letzten Stufe - hier gibt es nichts mehr zu steigern"
+                        : inStufe + " von " + ziel + " auf dieser Stufe, dann geht es eine weiter") +
+       "</div>";
+  h += '<div class="lernzahl"><span><b>' + (d.gesamt|0) + "</b> " + einheit + " gesamt</span>";
+  if (anhieb !== null) h += "<span><b>" + anhieb + " %</b> auf Anhieb (letzte " + letzte.length + ")</span>";
+  if (d.woerter) h += "<span><b>" + d.woerter + "</b> Wörter im Vorrat</span>";
+  h += "</div>";
+  h += jcPunkte(letzte);
+  if (letzte.length)
+    h += '<div style="font-size:.74rem;color:var(--ink-soft);margin-top:4px">' +
+         "grün = auf Anhieb richtig, orange = erst im zweiten Anlauf</div>";
+  if (wack.length)
+    h += '<div style="font-size:.85rem;margin-top:8px">Wird gerade besonders geübt: <b>' +
+         wack.map(esc).join(", ") + "</b></div>";
+  return h;
+}
+/* die letzten 14 Tage als kleines Balkendiagramm */
+function jcVerlauf(verlauf){
+  const tage = [];
+  for (let i = 13; i >= 0; i--){
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") +
+                "-" + String(d.getDate()).padStart(2,"0");
+    const e = (verlauf || {})[key] || {};
+    tage.push({ d: d, m: (e.m|0) + (e.mf|0), v: (e.v|0) + (e.vf|0) });
+  }
+  const max = Math.max(1, ...tage.map(t => t.m + t.v));
+  const hoch = 62;
+  const balken = tage.map(t => {
+    const hm = Math.round(t.m / max * hoch), hv = Math.round(t.v / max * hoch);
+    return "<div title=\"" + t.d.toLocaleDateString("de-DE") + ": " + t.m +
+      " Rechnen, " + t.v + " Wörter\">" +
+      (hv ? '<u class="woerter" style="height:' + hv + 'px"></u>' : "") +
+      (hm ? '<u class="rechnen" style="height:' + hm + 'px"></u>' : "") + "</div>";
+  }).join("");
+  const WT = ["So","Mo","Di","Mi","Do","Fr","Sa"];
+  const achse = tage.map(t => "<span>" + WT[t.d.getDay()] + "</span>").join("");
+  const summe = tage.reduce((s2,t) => s2 + t.m + t.v, 0);
+  const aktiv = tage.filter(t => t.m + t.v > 0).length;
+  return '<div style="font-weight:900;margin-top:16px">Die letzten 14 Tage</div>' +
+    '<div class="tage">' + balken + '</div><div class="tageachse">' + achse + "</div>" +
+    '<div class="legende">' +
+      '<span><em class="rechnen" style="background:#5B9BD5"></em>Rechnen</span>' +
+      '<span><em class="woerter" style="background:#7BBF6A"></em>Englische Wörter</span>' +
+      "<span>" + summe + " Aufgaben an " + aktiv + " von 14 Tagen</span></div>";
+}
+function renderLernfortschritt(){
+  const el = $("#lern-inhalt");
+  if (!el) return;
+  const jc = jcLaden();
+  if (!jc || (!jc.mathe && !jc.vok)){
+    el.innerHTML = '<p style="color:var(--ink-soft);margin:8px 0 0">' +
+      "Noch keine Lern-Pausen gespielt. Sobald Jonah in JonahCraft rechnet oder " +
+      "englische Wörter übt, steht hier sein Fortschritt." +
+      (jc ? "" : " (Auf diesem Gerät wurde JonahCraft noch nicht geöffnet.)") + "</p>";
+    return;
+  }
+  let h = "";
+  h += jcFach("🧮", "Einmaleins", jc.mathe, "Stufe", "Aufgaben");
+  h += jcFach("🇬🇧", "Englische Wörter", jc.vok, "Gruppe", "Wörter");
+  h += jcVerlauf(jc.verlauf);
+  const zuletzt = jc.mathe && jc.mathe.zuletzt;
+  h += '<div style="font-size:.85rem;color:var(--ink-soft);margin-top:12px">Zuletzt gespielt: <b>' +
+       jcDatum(zuletzt) + "</b></div>";
+  el.innerHTML = h;
+}
+
 /* ---------------- Elternbereich ---------------- */
 function renderParents(){
+  renderLernfortschritt();
   $("#set-name").value = state.name;
   $("#set-key").value = state.apiKey;
   $("#set-model").value = state.model;

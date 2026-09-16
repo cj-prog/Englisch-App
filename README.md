@@ -2,6 +2,24 @@
 
 ## 🆕 Was zuletzt neu kam
 
+- **Version 2.6:** Im **Elternbereich** gibt es jetzt den Abschnitt
+  **📊 Lernfortschritt in JonahCraft**. Dort steht auf einen Blick, wie Jonah
+  in den Lern-Pausen drüben vorankommt:
+  - **Einmaleins:** welche Stufe (z. B. „Jetzt auch die 4er-Reihe"), wie weit
+    er auf dieser Stufe ist, wie viele Aufgaben er insgesamt gelöst hat, wie
+    viel Prozent davon auf Anhieb saßen, die letzten zehn Ergebnisse als
+    Punktereihe (grün = auf Anhieb, orange = zweiter Anlauf) und welche
+    Aufgaben das Spiel gerade besonders übt (z. B. 7 × 8, 6 × 9).
+  - **Englische Wörter:** dasselbe für den Vokabeltest, mit Wortgruppe und
+    den Wörtern, die gerade wackeln.
+  - **Die letzten 14 Tage** als kleines Balkendiagramm (blau = Rechnen,
+    grün = Wörter) samt „123 Aufgaben an 11 von 14 Tagen" und wann zuletzt
+    gespielt wurde.
+  Die Ansicht **liest nur** – am Spielstand ändert sie nichts. Alles bleibt
+  auf dem Gerät; beide Apps liegen auf derselben Adresse und teilen sich
+  denselben Speicher. Steht drüben noch nichts, erscheint ein Hinweis statt
+  einer leeren Seite.
+
 - **Version 2.5:** Deine Freunde wissen jetzt, was du in **JonahCraft** machst!
   🎮 Beide Apps liegen auf derselben Adresse und teilen sich denselben
   Speicher. Wenn du drüben ein Level in der Halle, eine Mission oder die große

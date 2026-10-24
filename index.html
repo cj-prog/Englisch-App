@@ -604,7 +604,7 @@
    Fred der Englisch-Fuchs
    Ein Lern-Kumpel für Kinder in der 3. Klasse (erste englische Wörter).
    ===================================================================== */
-const APP_VERSION = "2.6";
+const APP_VERSION = "2.7";
 
 /* ---------------- Daten: Themen & Wortschatz-Kisten ---------------- */
 const TOPICS = [
@@ -1691,12 +1691,26 @@ function askTopic(){
   addMsg("fred", line, "Hi " + state.name + "! Worüber willst du reden?");
   speak(line);
   renderTopicChips();
+  $("#chat-input").placeholder = "…oder schreib dein eigenes Thema!";
 }
 function renderTopicChips(){
   /* Themen groß und untereinander, wie eine richtige Liste */
   const c = $("#chips");
   c.classList.add("stack");
   c.innerHTML = "";
+  /* Ganz oben: ein eigenes Thema erfinden! */
+  const own = document.createElement("button");
+  own.className = "chip topicpick";
+  own.style.background = "var(--bubble-fred)";
+  own.style.borderBottomColor = "var(--fox)";
+  own.innerHTML = '<span class="em">✏️</span>Eigenes Thema schreiben!<small>›</small>';
+  own.addEventListener("click", () => {
+    const inp = $("#chat-input");
+    inp.placeholder = "Schreib dein Thema hier! (z.B. sharks 🦈)";
+    inp.focus();
+    toast("Schreib unten einfach, worüber ihr reden sollt - auf Deutsch oder Englisch!", 3500);
+  });
+  c.appendChild(own);
   TOPICS.forEach(t => {
     const b = document.createElement("button");
     b.className = "chip topicpick";
@@ -1707,9 +1721,43 @@ function renderTopicChips(){
 }
 function beginTopic(t){
   chatTopic = t; step = 0; history = [];
+  $("#chat-input").placeholder = "…oder hier tippen";
   renderChips([]);
   if (aiMode) askFredAI("START");
   else fredSays(scriptLine(t.chat[0]));
+}
+/* Jonah schreibt sein EIGENES Thema - der Freund redet trotzdem mit! */
+function startCustomTopic(text){
+  const t = text.replace(/[.!?]+\s*$/, "").trim() || text;
+  $("#chat-input").placeholder = "…oder hier tippen";
+  step = 0; history = [];
+  if (aiMode){
+    chatTopic = { id:"custom", custom:true, title: t, words: [], chat: [] };
+    askFredAI(text);
+  } else {
+    chatTopic = { id:"custom", custom:true, title: t, words: [], chat: makeCustomScript(t) };
+    setTimeout(() => fredSays(scriptLine(chatTopic.chat[0])), 700);
+  }
+}
+function makeCustomScript(t){
+  /* Kleines Allzweck-Gespräch über Jonahs Wunschthema (Übungsmodus).
+     Echte Antworten auf Fragen kann nur der KI-Modus geben. */
+  return [
+    { fred: "Ooh, " + t + "! Great idea! What do you know about " + t + "?",
+      de: "Ooh, " + t + "! Super Idee! Was weißt du über " + t + "?",
+      sugg: [ { en:"A lot!", de:"Eine Menge!" }, { en:"A little bit.", de:"Ein bisschen." }, { en:"I love " + t + "!", de:"Ich liebe " + t + "!" } ] },
+    { fred: "Cool! Tell me more!", de: "Cool! Erzähl mir mehr!",
+      sugg: [ { en:"It is great!", de:"Es ist toll!" }, { en:"It is big!", de:"Es ist groß!" }, { en:"It is fun!", de:"Es macht Spaß!" } ] },
+    { fred: "Wow! What is your favourite thing about " + t + "?",
+      de: "Wow! Was magst du an " + t + " am liebsten?",
+      sugg: [ { en:"Everything!", de:"Alles!" }, { en:"It is so cool!", de:"Es ist so cool!" }, { en:"I don't know.", de:"Ich weiß nicht." } ] },
+    { fred: "That is so cool! I want to learn more about " + t + " too!",
+      de: "Das ist so cool! Ich will auch mehr über " + t + " lernen!",
+      sugg: [ { en:"Yes, let's learn!", de:"Ja, lass uns lernen!" }, { en:"Me too!", de:"Ich auch!" }, { en:"Great!", de:"Super!" } ] },
+    { fred: "Thank you for telling me about " + t + "! You are a great teacher!",
+      de: "Danke, dass du mir von " + t + " erzählt hast! Du bist ein toller Lehrer!", end: true,
+      sugg: [ { en:"Thank you!", de:"Danke!" }, { en:"You are welcome!", de:"Gern geschehen!" }, { en:"That was fun!", de:"Das hat Spaß gemacht!" } ] }
+  ];
 }
 function setModePill(){
   const p = $("#modepill");
@@ -1804,10 +1852,8 @@ function childSays(text){
   renderChips([]);
   $("#chat-input").value = "";
   if (!chatTopic){
-    /* Kind redet einfach los, ohne Thema zu wählen - klappt auch! */
-    chatTopic = TOPICS[0]; step = 0; history = [];
-    if (aiMode){ askFredAI(text); }
-    else { setTimeout(() => fredSays(scriptLine(chatTopic.chat[0])), 700); }
+    /* Jonah tippt sein eigenes Thema - oder redet einfach los */
+    startCustomTopic(text);
     return;
   }
   if (aiMode){
@@ -1870,7 +1916,10 @@ function systemPrompt(){
     "RULES:",
     "- Use VERY simple English: short sentences (max 8 words), present tense, beginner words only.",
     "- Maximum 2 short sentences per reply. Ask one simple question in most replies.",
-    "- Today's topic: " + chatTopic.title + ". Naturally reuse these words: " + vocab + ".",
+    chatTopic.custom
+      ? "- " + state.name + " chose today's topic HIMSELF: \"" + chatTopic.title + "\" (maybe written in German). Talk about exactly that with him in very simple English."
+      : "- Today's topic: " + chatTopic.title + ". Naturally reuse these words: " + vocab + ".",
+    "- When " + state.name + " asks you a question, answer it with very easy words (1-2 short sentences, fun little facts are great). And ask him simple questions back, one at a time.",
     "- React warmly to what " + state.name + " says. Be playful and curious.",
     "- If " + state.name + " writes German or seems stuck: help with the English word plus a tiny German hint in brackets.",
     "- Never criticize mistakes. Instead, repeat the sentence correctly inside your friendly reply.",

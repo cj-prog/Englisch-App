@@ -2,6 +2,13 @@
 
 ## 🆕 Was zuletzt neu kam
 
+- **Version 2.7:** Du kannst dir jetzt **dein eigenes Thema ausdenken**! ✏️
+  In der Themenliste gibt es „Eigenes Thema schreiben!" – tippe einfach,
+  worüber ihr reden sollt (auf Deutsch oder Englisch, z. B. „sharks" 🦈),
+  und dein Freund redet mit dir darüber. Mit dem KI-Schlüssel beantwortet er
+  auch deine Fragen mit einfachen Wörtern und stellt dir selbst welche –
+  im Übungsmodus staunt er und fragt dich, was du alles weißt.
+
 - **Version 2.6:** Im **Elternbereich** gibt es jetzt den Abschnitt
   **📊 Lernfortschritt in JonahCraft**. Dort steht auf einen Blick, wie Jonah
   in den Lern-Pausen drüben vorankommt:

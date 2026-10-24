@@ -2,6 +2,14 @@
 
 ## 🆕 Was zuletzt neu kam
 
+- **Version 2.8:** 🛡️ **Sticker-Schatzkammer!** Jonahs Sticker waren plötzlich
+  weg – weil sich die App den Browser-Speicher mit JonahCraft teilt und dort
+  etwas schiefgegangen ist. Jetzt liegen Sticker, gelernte Wörter und
+  geschaffte Themen zusätzlich in einer eigenen Schatzkammer: Wird der
+  Hauptspeicher je wieder leergeräumt, holt die App alles automatisch zurück.
+  Verlorene Sticker von früher: Downloads-Ordner → neueste
+  `fred-sicherung-….json` → Elternbereich → „Sicherung laden".
+
 - **Version 2.7:** Du kannst dir jetzt **dein eigenes Thema ausdenken**! ✏️
   In der Themenliste gibt es „Eigenes Thema schreiben!" – tippe einfach,
   worüber ihr reden sollt (auf Deutsch oder Englisch, z. B. „sharks" 🦈),

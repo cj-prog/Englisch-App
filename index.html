@@ -583,6 +583,9 @@
       <input type="file" id="restore-file" accept=".json,application/json" hidden>
       <div class="note">
         Sticker, gelernte Wörter und Einstellungen als Datei (ohne API-Schlüssel).
+        Sind Sticker einmal verschwunden: Im Downloads-Ordner liegen die
+        automatischen Sicherungen (fred-sicherung-….json) - die neueste über
+        „Sicherung laden" einspielen, dann ist alles wieder da.
         Beim ersten Start einer neuen App-Version wird automatisch eine Sicherung
         heruntergeladen. App-Version: <b id="ver-label"></b>
       </div>
@@ -604,7 +607,7 @@
    Fred der Englisch-Fuchs
    Ein Lern-Kumpel für Kinder in der 3. Klasse (erste englische Wörter).
    ===================================================================== */
-const APP_VERSION = "2.7";
+const APP_VERSION = "2.8";
 
 /* ---------------- Daten: Themen & Wortschatz-Kisten ---------------- */
 const TOPICS = [
@@ -925,17 +928,60 @@ const DEFAULTS = { name:"Jonah", apiKey:"", gKey:"", model:"claude-opus-5",
                       spielLog = was Jonah im Spiel geschafft hat,
                       gruppe   = der Plausch der englischen und deutschen Freunde */
                    spielLog:[], gruppe:[], logGesagtEng:0 };
+/* ---------------- 🛡️ Schatzkammer ----------------
+   JonahCraft und diese App teilen sich denselben Browser-Speicher. Wenn dort
+   etwas schiefgeht (voller Speicher, kaputter Eintrag, ein anderes Fenster
+   schreibt einen leeren Stand), waren Jonahs Sticker früher einfach weg.
+   Darum liegen die Schätze (Sticker, gelernte Wörter, geschaffte Themen)
+   zusätzlich in einer eigenen kleinen Schatzkammer - und werden von dort
+   automatisch zurückgeholt, falls der Hauptstand leergeräumt wurde. */
+const SCHATZ_KEY = "fredapp1_schatz";
+let schatzGerettet = false;
+function schatzLesen(){
+  try { const r = localStorage.getItem(SCHATZ_KEY); return r ? JSON.parse(r) : null; }
+  catch(e){ return null; }
+}
+function schatzSchreiben(){
+  try {
+    localStorage.setItem(SCHATZ_KEY, JSON.stringify({
+      stickers: state.stickers, learned: state.learned,
+      done: state.done, name: state.name, t: Date.now()
+    }));
+  } catch(e){}
+}
+/* Nur DIESE Felder gehören der Englisch-App - beim Speichern wird nichts
+   überschrieben, was JonahCraft in den gemeinsamen Speicher gelegt hat. */
+const ENG_FELDER = ["name","apiKey","gKey","model","voiceName","pitch","lastVersion","buddy",
+                    "learned","stickers","done","transcript","chats","unread","lastMsgGen","logGesagtEng"];
 let state = load();
 buddy = BUDDIES[state.buddy] || BUDDIES.fred;
 function load(){
+  let st = null;
   try {
     const raw = localStorage.getItem("fredapp1");
-    if (raw) return Object.assign({}, DEFAULTS, JSON.parse(raw));
+    if (raw) st = JSON.parse(raw);
   } catch(e){ /* Speicher gesperrt oder kaputt -> Standardwerte */ }
-  return Object.assign({}, DEFAULTS);
+  st = Object.assign({}, DEFAULTS, st || {});
+  const schatz = schatzLesen();
+  if (schatz && (schatz.stickers || []).length &&
+      !(st.stickers || []).length && !(st.learned || []).length){
+    /* Der Hauptstand ist leer, die Schatzkammer nicht: zurückholen! */
+    st.stickers = schatz.stickers.slice();
+    st.learned = (schatz.learned || []).slice();
+    st.done = Object.assign({}, schatz.done || {});
+    if (schatz.name && st.name === DEFAULTS.name) st.name = schatz.name;
+    schatzGerettet = true;
+  }
+  return st;
 }
 function save(){
-  try { localStorage.setItem("fredapp1", JSON.stringify(state)); } catch(e){}
+  try {
+    let raw = {};
+    try { const r = localStorage.getItem("fredapp1"); if (r) raw = JSON.parse(r) || {}; } catch(e){}
+    ENG_FELDER.forEach(k => { raw[k] = state[k]; });
+    localStorage.setItem("fredapp1", JSON.stringify(raw));
+  } catch(e){}
+  schatzSchreiben();
 }
 
 /* ---------------- kleine Helfer ---------------- */
@@ -2399,7 +2445,9 @@ $("#restore-file").addEventListener("change", ev => {
 
 $("#btn-reset").addEventListener("click", () => {
   if (confirm("Wirklich ALLE Daten (Sticker, Fortschritt, Einstellungen) löschen?")){
-    state = Object.assign({}, DEFAULTS); save(); renderHome(); toast("Alles zurückgesetzt.");
+    state = Object.assign({}, DEFAULTS);
+    try { localStorage.removeItem(SCHATZ_KEY); } catch(e){}
+    save(); renderHome(); toast("Alles zurückgesetzt.");
   }
 });
 
@@ -2456,10 +2504,22 @@ function confetti(){
    API-Schlüssel eingetragen wird, übernimmt dieser Tab das sofort. */
 window.addEventListener("storage", ev => {
   if (ev.key === "fredapp1"){
+    const alt = state;
     state = load();
+    /* Schutz: hat ein anderes Fenster gerade Sticker verschwinden lassen? */
+    if ((alt.stickers || []).length > (state.stickers || []).length){
+      state.stickers = alt.stickers;
+      state.learned = alt.learned;
+      state.done = alt.done;
+      save();
+    }
     if ($("#scr-home").classList.contains("on")) renderHome();
   }
 });
+if (schatzGerettet){
+  save();   /* geretteten Stand sofort wieder festschreiben */
+  setTimeout(() => toast("🛡️ Deine Sticker waren in Gefahr - ich habe sie aus der Schatzkammer zurückgeholt!", 5500), 800);
+}
 maybeOfflineMessages();   /* Freunde haben vielleicht geschrieben, während er weg war */
 /* Neue App-Version? Zwischenstand automatisch als Datei sichern. */
 if (state.lastVersion !== APP_VERSION){

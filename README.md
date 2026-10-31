@@ -2,6 +2,11 @@
 
 ## 🆕 Was zuletzt neu kam
 
+- **Version 2.9:** ⛏️ **Der Wechsel-Knopf!** Oben rechts schwebt jetzt auf
+  jeder Seite ein grüner Knopf. Antippen → „Zu JonahCraft" oder „Abbrechen".
+  Bei „Zu JonahCraft" wird erst dein Stand gesichert und dann landest du
+  direkt im Spiel – und dort gibt es den Knopf zurück zur Englisch-App!
+
 - **Version 2.8:** 🛡️ **Sticker-Schatzkammer!** Jonahs Sticker waren plötzlich
   weg – weil sich die App den Browser-Speicher mit JonahCraft teilt und dort
   etwas schiefgegangen ist. Jetzt liegen Sticker, gelernte Wörter und

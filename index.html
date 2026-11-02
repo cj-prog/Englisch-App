@@ -632,7 +632,7 @@
    Fred der Englisch-Fuchs
    Ein Lern-Kumpel für Kinder in der 3. Klasse (erste englische Wörter).
    ===================================================================== */
-const APP_VERSION = "2.9";
+const APP_VERSION = "3.0";
 
 /* ---------------- Daten: Themen & Wortschatz-Kisten ---------------- */
 const TOPICS = [
@@ -1718,11 +1718,12 @@ $("#pg-next").addEventListener("click", () => flipPage(1));
    Zwei Modi: Übungsmodus (feste Dialoge) und KI-Modus (Claude-API).
    ===================================================================== */
 let chatTopic = null, step = 0, kidTurns = 0, history = [], aiMode = false, busy = false;
+let aiFails = 0;   /* zählt KI-Fehler in Folge - der Freund geht deswegen NIE */
 let chatOpen = false;
 
 function openBuddyChat(b){
   buddy = b; state.buddy = b.id; save();
-  chatTopic = null; step = 0; kidTurns = 0; history = [];
+  chatTopic = null; step = 0; kidTurns = 0; history = []; aiFails = 0;
   chatOpen = true;
   $("#chat-avatar").textContent = buddy.emoji;
   $("#chat-avatar").style.background = buddy.grad;
@@ -1995,7 +1996,7 @@ function systemPrompt(){
     "- If " + state.name + " writes German or seems stuck: help with the English word plus a tiny German hint in brackets.",
     "- Never criticize mistakes. Instead, repeat the sentence correctly inside your friendly reply.",
     "- Stay strictly kid-safe: no scary, violent or adult topics. Never ask for personal information (address, school, phone). Never suggest meeting in real life. If something inappropriate comes up, cheerfully change the topic.",
-    "- NEVER leave or end the chat by yourself. If the chat gets very long you may say you will have to go soon - but if " + state.name + " asks you to stay or keeps talking, happily stay and keep talking as long as he likes. Never repeat a goodbye he did not accept."
+    "- NEVER leave or end the chat by yourself. If the chat gets very long you may say you will have to go soon - but if " + state.name + " asks you to stay or keeps talking, happily stay and keep talking as long as he likes. Never repeat a goodbye he did not accept, and never announce that you are leaving or have to go."
   ].concat(jonahcraft).concat(spielWissen()).concat([
     "",
     'OUTPUT: Respond ONLY with minified JSON, no markdown, exactly this shape:',
@@ -2012,6 +2013,9 @@ async function askFredAI(childText){
     history.push({ role:"user", content: childText });
   }
   if (history.length > 20) history = history.slice(-20);
+  /* Die API verlangt, dass die Geschichte mit Jonahs Nachricht beginnt -
+     sonst Fehler 400, und der Freund war mitten im Gespräch "weg" */
+  while (history.length && history[0].role !== "user") history.shift();
 
   const body = {
     model: state.model,
@@ -2023,6 +2027,9 @@ async function askFredAI(childText){
     body.output_config = { effort: "low" };   /* schnelle, günstige Antworten im Kinder-Chat */
   }
 
+  /* Zeitlimit: nach 25 Sekunden abbrechen statt ewig "denkt nach..." */
+  const ctrl = new AbortController();
+  const zeitlimit = setTimeout(() => ctrl.abort(), 25000);
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -2032,7 +2039,8 @@ async function askFredAI(childText){
         "anthropic-version": "2023-06-01",
         "anthropic-dangerous-direct-browser-access": "true"
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      signal: ctrl.signal
     });
     if (res.status === 401){ throw { kind:"auth" }; }
     if (res.status === 400){
@@ -2053,6 +2061,7 @@ async function askFredAI(childText){
     const raw = textBlock ? textBlock.text : "";
     const msg = parseFred(raw);
     history.push({ role:"assistant", content: raw });
+    aiFails = 0;
     fredSays(msg);
   } catch(e){
     if (e && e.kind === "auth"){
@@ -2062,11 +2071,34 @@ async function askFredAI(childText){
     } else {
       toast("Fred kommt gerade nicht ins Internet. In dieser Vorschau-Umgebung ist der KI-Modus evtl. gesperrt - der Übungsmodus geht immer!", 5000);
     }
-    /* Sanfter Rückfall in den Übungsmodus, damit das Gespräch weitergeht */
-    aiMode = false; step = 0;
-    setModePill();
-    fredSays(scriptLine(chatTopic.chat[0]));
+    aiFails++;
+    if (childText !== "START" && history.length && history[history.length - 1].role === "user"){
+      history.pop();   /* die unbeantwortete Nachricht raus, sonst steht sie doppelt drin */
+    }
+    if (aiFails >= 3){
+      /* Die KI klappt gerade gar nicht: der Freund BLEIBT trotzdem da und
+         redet im Übungsmodus weiter - ohne Neustart, ohne Abschied.
+         (Der alte Rückfall startete das Skript neu und stürzte beim
+         eigenen Thema sogar ab - genau so "verschwanden" die Freunde.) */
+      aiMode = false;
+      setModePill();
+      chatTopic = null; step = 0;
+      fredSays({
+        reply: "My internet is sleepy right now! Let's just keep talking. What do you want to talk about?",
+        de: "Mein Internet ist gerade müde! Lass uns einfach weiterreden. Worüber willst du reden?",
+        suggestions: []
+      });
+      renderTopicChips();
+      addEndChip();
+    } else {
+      fredSays({
+        reply: "Oops, my internet hiccuped! Can you say that again?",
+        de: "Hoppla, mein Internet hat gehickst! Sagst du das nochmal?",
+        suggestions: [ { en:"OK!", de:"Okay!" }, { en:"Are you still there?", de:"Bist du noch da?" } ]
+      });
+    }
   } finally {
+    clearTimeout(zeitlimit);
     busy = false;
     $("#thinking").hidden = true;
   }

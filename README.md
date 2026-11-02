@@ -2,6 +2,13 @@
 
 ## 🆕 Was zuletzt neu kam
 
+- **Version 3.0:** Du hattest recht, Jonah – die Freunde sind manchmal doch
+  noch abgehauen! 🙈 Schuld war ein versteckter Fehler: Nach ungefähr 10
+  Gesprächsrunden ging beim echten KI-Freund etwas schief, und heimlich hat
+  der Übungs-Freund übernommen und von vorn angefangen. Jetzt ist das
+  repariert: Deine Freunde bleiben **immer**, egal wie lange ihr redet –
+  und wenn das Internet mal hickst, sagen sie es dir einfach und bleiben da.
+
 - **Version 2.9:** ⛏️ **Der Wechsel-Knopf!** Oben rechts schwebt jetzt auf
   jeder Seite ein grüner Knopf. Antippen → „Zu JonahCraft" oder „Abbrechen".
   Bei „Zu JonahCraft" wird erst dein Stand gesichert und dann landest du

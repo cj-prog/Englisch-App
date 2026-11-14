@@ -632,7 +632,7 @@
    Fred der Englisch-Fuchs
    Ein Lern-Kumpel für Kinder in der 3. Klasse (erste englische Wörter).
    ===================================================================== */
-const APP_VERSION = "3.0";
+const APP_VERSION = "3.1";
 
 /* ---------------- Daten: Themen & Wortschatz-Kisten ---------------- */
 const TOPICS = [
@@ -2581,7 +2581,14 @@ if (schatzGerettet){
    Jonahs Wunsch: oben ein Knopf zum Hin- und Herschalten zwischen den
    beiden Apps. Antippen fragt nach; "Zu JonahCraft" sichert erst den
    Stand und wechselt dann im selben Tab - drüben gibt es den Gegen-Knopf. */
-const JC_URL = "https://cj-prog.github.io/Jonah-Minecraft-/";
+/* Die Adresse von JonahCraft wird aus der eigenen Adresse abgeleitet:
+   auf jedem GitHub-Pages-Konto (cj-prog, jonahs-kiste, ...) liegen beide
+   Apps nebeneinander unter derselben Adresse. So funktioniert der Knopf
+   nach einem Konto-Umzug ohne Änderung weiter. Nur außerhalb von
+   GitHub Pages (Datei-Ansicht, Vorschau) gilt die feste Adresse. */
+const JC_URL = location.hostname.endsWith(".github.io")
+  ? location.origin + "/Jonah-Minecraft-/"
+  : "https://cj-prog.github.io/Jonah-Minecraft-/";
 $("#jc-switch").addEventListener("click", () => { $("#jc-overlay").hidden = false; });
 $("#jc-cancel").addEventListener("click", () => { $("#jc-overlay").hidden = true; });
 $("#jc-overlay").addEventListener("click", ev => {

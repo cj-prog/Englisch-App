@@ -2,6 +2,12 @@
 
 ## 🆕 Was zuletzt neu kam
 
+- **Version 3.1:** 📦 **Die App ist umzugsfest!** Deine Apps ziehen bald in
+  ihr eigenes Zuhause im Internet um (ein neues Konto nur für dich). Damit
+  der ⛏️-Knopf zu JonahCraft danach weiter den Weg findet, schaut er jetzt
+  einfach nach, wo die App gerade wohnt – so klappt der Wechsel vor **und**
+  nach dem Umzug, ganz ohne Umbauen.
+
 - **Version 3.0:** Du hattest recht, Jonah – die Freunde sind manchmal doch
   noch abgehauen! 🙈 Schuld war ein versteckter Fehler: Nach ungefähr 10
   Gesprächsrunden ging beim echten KI-Freund etwas schief, und heimlich hat
